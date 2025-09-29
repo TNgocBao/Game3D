@@ -45,5 +45,5 @@ Watch the full gameplay demo here:
 2. Extract the ZIP file
 3. Run "Super Mario.exe" to start the game
 
-## 🎯 How to Play
+## 🎯 Guide
 ![Game Instructions](https://github.com/timchen1015/Super-Mario/blob/main/game_instructions.png)
