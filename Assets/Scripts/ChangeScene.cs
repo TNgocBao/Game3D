@@ -10,7 +10,11 @@ public class ChangeScene : MonoBehaviour
 
     private void Start()
     {
-        mm = GameObject.FindGameObjectWithTag("Player").GetComponent<MarioMovement>();
+        player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            mm = player.GetComponent<MarioMovement>();
+        }
     }
     public void startgame()
     {
@@ -35,8 +39,8 @@ public class ChangeScene : MonoBehaviour
     }
     private void Update()
     {
-        if (mm == null) return;
-        if (!mm.isGrounded && transform.position.y < -20)
+        if (mm == null || mm.isDead) return;
+        if (!mm.isGrounded && mm.transform.position.y < -20)
         {
             mm.isDead = true;
             SceneManager.LoadScene(3);
