@@ -1,0 +1,4 @@
+from pathlib import Path
+p=Path('Assets/Scripts/Lumi/LumiNarutoArt.cs');s=p.read_text(encoding='utf-8-sig');s=s.replace('return prefab!=null?Object.Instantiate(prefab,parent,false):LumiChibiNarutoModel.Create(parent);','if(prefab==null)throw new System.InvalidOperationException("Naruto Starter prefab is missing. Rebuild it with LumiStarterNarutoBuild in the Unity Editor.");\n            return Object.Instantiate(prefab,parent,false);');p.write_text(s,encoding='utf-8-sig')
+p=Path('Assets/Editor/LumiStarterNarutoBuild.cs');s=p.read_text(encoding='utf-8-sig').replace(' public static void Build()',' [MenuItem("Naruto/Rebuild Starter character")]\n public static void Build()');p.write_text(s,encoding='utf-8-sig')
+p=Path('README.md');s=p.read_text(encoding='utf-8-sig').replace('Assets/Art/NarutoReference','Assets/Art/NarutoStarter').replace('ArtSource/NarutoReferenceSculpt','ArtSource/NarutoStarter');p.write_text(s,encoding='utf-8')

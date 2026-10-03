@@ -12,8 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ac3c5ec226d5784485f79f9a61eff97, type: 3}
   m_Name: LumiAssetCatalog
   m_EditorClassIdentifier: 
-  entries:
-  - path: Assets/ThirdParty/Kenney/Blasters/Models/FBX format/blaster-l.fbx
-    asset: {fileID: 919132149155446097, guid: 9af7d0b07b3dc294c8279361205a45d2, type: 3}
-  - path: Assets/ThirdParty/Kenney/Blasters/Models/FBX format/blaster-r.fbx
-    asset: {fileID: 919132149155446097, guid: f6ad29a616dc4b54fa76d0c93027427b, type: 3}
+  entries: []

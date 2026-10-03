@@ -87,8 +87,8 @@ namespace LumiAdventure
             UiText(side.transform,"5 làng ninja",32,Color.white,new Vector2(270,55),new Vector2(0,79));
             UiText(side.transform,"Đã mở "+unlocked+" / 5 làng",28,UiMuted,new Vector2(270,55),new Vector2(0,22));
             UiText(side.transform,"ĐIỀU KHIỂN",28,UiMuted,new Vector2(270,55),new Vector2(0,-104));
-            string[] keys={"WASD","CHUỘT","Q / R / F","TAB / ESC"};
-            string[] actions={"Di chuyển","Xoay / Ném","Nhẫn thuật","UI / Menu"};
+            string[] keys={"WASD","CHUỘT","Q / R / F","V / TAB"};
+            string[] actions={"Di chuyển","Nhìn / Ném","Nhẫn thuật","Góc nhìn / UI"};
             for(int i=0;i<4;i++)
             {
                 float y=-168-i*62;

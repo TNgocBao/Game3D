@@ -9,11 +9,13 @@ namespace LumiAdventure
         private Camera viewCamera;
         private LumiGame game;
         [SerializeField] private float distance=5.8f;
-        [SerializeField] private float pitch=18f;
+        [SerializeField] private float pitch=0f;
         [SerializeField] private float yaw=0f;
         private Vector3 focus;
         private Vector2 mapSize;
-        private bool closeView=true;
+        private bool firstPerson=true;
+        private LumiPlayerViewVisibility visibility;
+        public bool FirstPerson=>firstPerson;
         [SerializeField,Range(.1f,8f)] private float mouseSensitivity=2.5f;
         public bool MouseLookActive=>!Application.isMobilePlatform && game!=null && game.IsPlaying && Application.isFocused && Cursor.lockState==CursorLockMode.Locked;
         public bool ReacquiredThisFrame {get;private set;}
@@ -27,9 +29,7 @@ namespace LumiAdventure
         {
             get
             {
-                Vector3 forward = viewCamera.transform.forward;
-                forward.y = 0f;
-                return forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
+                return Quaternion.Euler(0,yaw,0)*Vector3.forward;
             }
         }
 
@@ -40,16 +40,18 @@ namespace LumiAdventure
             mapSize=bounds;
             viewCamera = gameObject.AddComponent<Camera>();
             viewCamera.orthographic = false;
-            viewCamera.fieldOfView = 60f;
-            viewCamera.nearClipPlane = 0.15f;
+            viewCamera.fieldOfView = 75f;
+            viewCamera.nearClipPlane = .05f;
             viewCamera.farClipPlane = 180f;
             viewCamera.clearFlags = CameraClearFlags.SolidColor;
             viewCamera.backgroundColor = background;
             gameObject.tag="MainCamera";
             gameObject.AddComponent<AudioListener>();
+            visibility=target.GetComponent<LumiPlayerViewVisibility>();if(visibility==null)visibility=target.gameObject.AddComponent<LumiPlayerViewVisibility>();
+            visibility.Initialize();visibility.SetFirstPerson(firstPerson);
             focus=FocusPoint();
             transform.rotation=Quaternion.Euler(pitch,yaw,0f);
-            transform.position=focus-transform.forward*distance;
+            transform.position=firstPerson?EyePoint():focus-transform.forward*distance;
 
         }
 
@@ -69,9 +71,9 @@ namespace LumiAdventure
             else if(Application.isMobilePlatform)ApplyLookDelta(LumiMobileInput.Look);
             if(MouseLookActive || Application.isMobilePlatform)
             {
-                distance=Mathf.Clamp(distance-Input.mouseScrollDelta.y*.65f,3.5f,28f);
-                if(Input.GetKeyDown(KeyCode.V)){closeView=!closeView;distance=closeView?5.8f:26;pitch=closeView?18:48;}
-                if(Input.GetKeyDown(KeyCode.Home)){yaw=0;pitch=18;distance=5.8f;closeView=true;}
+                if(!firstPerson)distance=Mathf.Clamp(distance-Input.mouseScrollDelta.y*.65f,3.5f,9f);
+                if(Input.GetKeyDown(KeyCode.V))SetFirstPerson(!firstPerson);
+                if(Input.GetKeyDown(KeyCode.Home)){yaw=0;pitch=0;distance=5.8f;SetFirstPerson(true);}
             }
         }
 
@@ -79,13 +81,14 @@ namespace LumiAdventure
         {
             // Mouse axes already represent motion per frame; multiplying by deltaTime makes sensitivity depend on FPS.
             yaw=Mathf.Repeat(yaw+delta.x*mouseSensitivity,360);
-            pitch=Mathf.Clamp(pitch-delta.y*mouseSensitivity,-12,65);
+            pitch=Mathf.Clamp(pitch-delta.y*mouseSensitivity,-89.5f,89.5f);
             transform.rotation=Quaternion.Euler(pitch,yaw,0);
         }
 
         private void LateUpdate()
         {
             if (target == null || game == null) return;
+            if(firstPerson){transform.SetPositionAndRotation(EyePoint(),Quaternion.Euler(pitch,yaw,0));return;}
             focus=Vector3.Lerp(focus,FocusPoint(),1-Mathf.Exp(-7*Time.unscaledDeltaTime));
             Quaternion rotation=Quaternion.Euler(pitch,yaw,0f);
             Vector3 behind=-(rotation*Vector3.forward);
@@ -105,10 +108,23 @@ namespace LumiAdventure
 
         }
 
+        public void SetFirstPerson(bool value)
+        {
+            firstPerson=value;
+            if(visibility!=null)visibility.SetFirstPerson(value);
+            if(viewCamera!=null){viewCamera.nearClipPlane=value?.05f:.15f;viewCamera.fieldOfView=value?75:60;}
+            if(target!=null){focus=FocusPoint();transform.position=value?EyePoint():focus-transform.forward*distance;}
+        }
+        private Transform eyeSocket;
+        public Vector3 EyePoint(){if(eyeSocket==null && target!=null){foreach(var child in target.GetComponentsInChildren<Transform>())if(child.name=="Eye camera socket"){eyeSocket=child;break;}}return (eyeSocket!=null?eyeSocket.position:target.position+Vector3.up*1.585f)+FlatForward*.06f;}
+        private void OnDestroy(){if(visibility!=null)visibility.SetFirstPerson(false);}
+
         private Vector3 FocusPoint()
         {
             return target.position+Vector3.up*1.45f;
         }
     }
 }
+
+
 

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace LumiAdventure
 {
@@ -7,7 +7,8 @@ namespace LumiAdventure
         public static GameObject Create(Transform parent)
         {
             GameObject prefab=Resources.Load<GameObject>("NarutoChibi/Naruto");
-            return prefab!=null?Object.Instantiate(prefab,parent,false):LumiChibiNarutoModel.Create(parent);
+            if(prefab==null)throw new System.InvalidOperationException("Naruto Starter prefab is missing. Rebuild it with LumiStarterNarutoBuild in the Unity Editor.");
+            return Object.Instantiate(prefab,parent,false);
         }
     }
 }

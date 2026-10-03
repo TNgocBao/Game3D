@@ -75,10 +75,11 @@ public static class LumiNarutoModelReview
     [InitializeOnLoadMethod] private static void Restore(){stage=SessionState.GetInt("NarutoModelReview.Stage",0);}
     private static void Capture(Transform target,float height,float forward,string file,float yaw=0)
     {
-        Camera camera=game.CameraRig.ViewCamera;Vector3 position=camera.transform.position;Quaternion rotation=camera.transform.rotation;float fov=camera.fieldOfView;RenderTexture old=camera.targetTexture;
+        bool firstPerson=game.CameraRig.FirstPerson;Camera camera=game.CameraRig.ViewCamera;Vector3 position=camera.transform.position;Quaternion rotation=camera.transform.rotation;float fov=camera.fieldOfView;RenderTexture old=camera.targetTexture;
+        game.CameraRig.SetFirstPerson(false);
         RenderTexture texture=new RenderTexture(768,960,24);camera.targetTexture=texture;camera.fieldOfView=35;
         camera.transform.position=target.position+(Quaternion.AngleAxis(yaw,Vector3.up)*target.forward)*forward+Vector3.up*height;camera.transform.LookAt(target.position+Vector3.up*height);
         camera.Render();RenderTexture active=RenderTexture.active;RenderTexture.active=texture;Texture2D image=new Texture2D(768,960,TextureFormat.RGB24,false);image.ReadPixels(new Rect(0,0,768,960),0,0);image.Apply();File.WriteAllBytes("Logs/NarutoQA/"+file,image.EncodeToPNG());
-        camera.targetTexture=old;camera.fieldOfView=fov;camera.transform.SetPositionAndRotation(position,rotation);RenderTexture.active=active;UnityEngine.Object.DestroyImmediate(image);texture.Release();UnityEngine.Object.DestroyImmediate(texture);
+        camera.targetTexture=old;game.CameraRig.SetFirstPerson(firstPerson);camera.fieldOfView=fov;camera.transform.SetPositionAndRotation(position,rotation);RenderTexture.active=active;UnityEngine.Object.DestroyImmediate(image);texture.Release();UnityEngine.Object.DestroyImmediate(texture);
     }
 }

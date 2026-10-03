@@ -1,0 +1,8 @@
+Cleanup completed 2026-10-03.
+About 808 MiB removed from the project into Windows Recycle Bin.
+Assets directory after cleanup: 269 files, 109399040 bytes (104.33 MiB).
+Removed: HelloMarioAssets, old scenes/controllers/scripts/media, unused Kenney packs, obsolete Naruto resources, unused Nunito fonts, duplicate references, old downloaded models, Blender backup and temporary refinement scripts, duplicate Unity review project.
+Kept: active Naruto mesh/materials/FBX, Blender source and tool environment, current village art/music/fonts, original user references, active gameplay code, Unity project settings and package definitions.
+Validation: no retained serialized asset references any removed asset GUID; all current runtime/editor C# compiled successfully.
+Unity Library/Temp caches and Git history retained.
+Permanent bulk deletion was blocked by automatic policy review; recoverable recycling succeeded.
