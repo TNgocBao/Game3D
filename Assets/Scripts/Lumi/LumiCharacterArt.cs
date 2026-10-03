@@ -55,47 +55,4 @@ namespace LumiAdventure
         private static void Part(string n,PrimitiveType p,Transform t,Vector3 v,Vector3 s,Material m)=>LumiFactory.Primitive(n,p,t,v,s,m,false);
     }
 
-    public class LumiInfantryMotion:MonoBehaviour
-    {
-        private Vector3 last,rest,leftRest,rightRest;
-        private Transform leftLeg,rightLeg,leftArm,rightArm;
-        private float phase,blend;
-        private bool grounded=true,hostile;
-        private LumiGame game;
-        public Transform WeaponHand=>rightArm;
-        public float StridePhase=>phase;
-        public void Configure(LumiGame owner,bool enemy)
-        {
-            game=owner;hostile=enemy;rest=transform.localPosition;last=transform.parent.position;
-            leftLeg=transform.Find("Left leg");rightLeg=transform.Find("Right leg");
-            leftArm=transform.Find("Left arm");rightArm=transform.Find("Right arm");
-            leftRest=leftLeg.localPosition;rightRest=rightLeg.localPosition;
-        }
-        private void Start(){if(rightLeg==null)Configure(null,false);}
-        public void SetGrounded(bool value){grounded=value;}
-        private void LateUpdate()
-        {
-            if(transform.parent==null || Time.deltaTime<=0)return;
-            Vector3 movement=transform.parent.position-last;movement.y=0;
-            if(movement.magnitude>4){last=transform.parent.position;return;}
-            float distance=movement.magnitude;
-            blend=Mathf.MoveTowards(blend,grounded && distance>.001f?1:0,Time.deltaTime*12);
-            float previous=phase;phase+=distance/1.35f*Mathf.PI*2;
-            Vector3 local=transform.InverseTransformDirection(movement.normalized);
-            float swing=Mathf.Sin(phase)*blend;
-            PoseLeg(leftLeg,leftRest,local,swing,phase);
-            PoseLeg(rightLeg,rightRest,local,-swing,phase+Mathf.PI);
-            leftArm.localRotation=Quaternion.Euler(-swing*14,0,0);
-            rightArm.localRotation=Quaternion.Euler(swing*(hostile?8:3),0,0);
-            transform.localPosition=rest+Vector3.up*(Mathf.Abs(Mathf.Cos(phase))*.035f*blend+Mathf.Sin(Time.time*2.5f)*.008f*(1-blend));
-            if(grounded && game!=null && game.IsPlaying && Mathf.FloorToInt(phase/Mathf.PI)!=Mathf.FloorToInt(previous/Mathf.PI))
-                if(!hostile || (game.Player!=null && Vector3.Distance(game.Player.transform.position,transform.position)<8))game.Audio.Play("step",hostile?.065f:.25f);
-            last=transform.parent.position;
-        }
-        private void PoseLeg(Transform leg,Vector3 origin,Vector3 direction,float swing,float timing)
-        {
-            leg.localPosition=origin+direction*swing*.12f+Vector3.up*Mathf.Max(0,Mathf.Sin(timing))*.075f*blend;
-            leg.localRotation=Quaternion.Euler(-swing*direction.z*28,0,swing*direction.x*28);
-        }
-    }
 }

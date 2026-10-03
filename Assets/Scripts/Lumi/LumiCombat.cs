@@ -69,6 +69,8 @@ namespace LumiAdventure
         private Vector3 direction;
         private float speed;
         private float life;
+        private Vector3 spin=new Vector3(300,420,0);
+        public void SetSpin(Vector3 value){spin=value;}
         private int damage;
         private bool fromPlayer;
         private LumiGame game;
@@ -95,7 +97,7 @@ namespace LumiAdventure
                 var damageable = FindDamageable(hit.collider);
                 if (damageable != null)
                 {
-                    bool validTarget = (fromPlayer && damageable is LumiEnemy) || (!fromPlayer && damageable is LumiPlayer);
+                    bool validTarget = (fromPlayer && (damageable is LumiEnemy || damageable is LumiVillageBoss)) || (!fromPlayer && (damageable is LumiPlayer || damageable is LumiShadowClone));
                     if (validTarget) damageable.TakeDamage(damage, hit.point);
                 }
                 game.SpawnImpact(hit.point, fromPlayer ? new Color(0.2f, 0.9f, 1f) : new Color(1f, 0.2f, 0.15f));
@@ -104,7 +106,7 @@ namespace LumiAdventure
             }
 
             transform.position += direction * distance;
-            transform.Rotate(300f * Time.deltaTime, 420f * Time.deltaTime, 0f);
+            transform.Rotate(spin*Time.deltaTime,Space.Self);
             life -= Time.deltaTime;
             if (life <= 0f) Release();
         }

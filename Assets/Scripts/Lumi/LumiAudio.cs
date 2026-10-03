@@ -41,6 +41,9 @@ namespace LumiAdventure
             ApplyVolumes();
 
             clips["shoot"] = Tone("shoot", 720f, 0.08f, 0.35f, true);
+            clips["chakra"]=Chime("chakra",new[]{280f,420f,620f,880f},.45f);
+            clips["wind"]=Tone("wind",160f,.6f,.2f,true);
+            clips["clone"]=Tone("clone",95f,.22f,.4f,true);
             clips["hit"] = Tone("hit", 180f, 0.12f, 0.5f, false);
             clips["hurt"] = Tone("hurt", 105f, 0.2f, 0.6f, false);
             clips["pickup"] = Tone("pickup", 880f, 0.18f, 0.45f, true);

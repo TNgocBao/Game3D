@@ -125,6 +125,7 @@ namespace LumiAdventure
             mobilePanel.SetActive(Application.isMobilePlatform);
             BuildLevel(currentLevel);
             state = GameState.Playing;
+            BindNarutoHud();
             SetCursor(true);
             Audio.PlayLevelMusic(currentLevel);
             RefreshHud();
@@ -163,6 +164,7 @@ namespace LumiAdventure
         public void WinLevel()
         {
             if (state != GameState.Playing) return;
+            if(!BossCleared){ShowToast("Hạ "+LumiVillageBoss.Names[currentLevel-1]+" để mở cổng!",new Color(1,.7f,.2f));return;}
             state = GameState.Won;
             SetCursor(false);
             Audio.Play("win");
@@ -275,7 +277,7 @@ namespace LumiAdventure
 
         public bool IsPointerOverUi()
         {
-            if (Application.isMobilePlatform) return false;
+            if (Application.isMobilePlatform || Cursor.lockState==CursorLockMode.Locked) return false;
             return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
@@ -306,6 +308,7 @@ namespace LumiAdventure
             BuildPausePanel();
             BuildDialoguePanel();
             BuildMobilePanel();
+            BuildNarutoHud();
             resultPanel = Panel("Result", new Color(0.02f, 0.035f, 0.065f, 0.94f));
             BuildAudioSettings();
 
@@ -362,7 +365,7 @@ namespace LumiAdventure
             starText = LumiFactory.Text(hudPanel.transform, "★ 0/5", 34, TextAnchor.MiddleCenter, new Color(1f, 0.82f, 0.08f));
             LumiFactory.Rect(starText.rectTransform, new Vector2(0.5f, 0.94f), new Vector2(400f, 64f), Vector2.zero);
             starText.raycastTarget = false;
-            objectiveText = LumiFactory.Text(hudPanel.transform, "ĐẾN CỔNG ĐÍCH VÀ CÒN SỐNG", 22, TextAnchor.MiddleCenter, Color.white);
+            objectiveText = LumiFactory.Text(hudPanel.transform, "HẠ KAGE CUỐI LÀNG ĐỂ MỞ CỔNG", 22, TextAnchor.MiddleCenter, Color.white);
             LumiFactory.Rect(objectiveText.rectTransform, new Vector2(0.5f, 0.885f), new Vector2(700f, 45f), Vector2.zero);
             objectiveText.raycastTarget = false;
             buffText = LumiFactory.Text(hudPanel.transform, string.Empty, 22, TextAnchor.MiddleRight, new Color(0.7f, 0.92f, 1f));
@@ -402,15 +405,13 @@ namespace LumiAdventure
 
         private void BuildPausePanel()
         {
-            pausePanel = Panel("Pause", new Color(0.01f, 0.025f, 0.05f, 0.88f));
-            Text title = LumiFactory.Text(pausePanel.transform, "TẠM DỪNG", 52, TextAnchor.MiddleCenter, Color.white);
-            LumiFactory.Rect(title.rectTransform, new Vector2(0.5f, 0.72f), new Vector2(700f, 90f), Vector2.zero);
-            Button resume = LumiFactory.Button(pausePanel.transform, "TIẾP TỤC", new Color(0.08f, 0.68f, 0.62f), ResumeGame);
-            LumiFactory.Rect(resume.GetComponent<RectTransform>(), new Vector2(0.5f, 0.55f), new Vector2(380f, 75f), Vector2.zero);
-            Button menu = LumiFactory.Button(pausePanel.transform, "CHỌN LEVEL", new Color(0.16f, 0.3f, 0.48f), ShowLevelMenu);
-            LumiFactory.Rect(menu.GetComponent<RectTransform>(), new Vector2(0.5f, 0.44f), new Vector2(380f, 75f), Vector2.zero);
-            Button audioSettings = LumiFactory.Button(pausePanel.transform, "CÀI ĐẶT ÂM THANH", new Color(0.25f, 0.25f, 0.35f), OpenAudioSettings);
-            LumiFactory.Rect(audioSettings.GetComponent<RectTransform>(), new Vector2(0.5f, 0.33f), new Vector2(380f, 75f), Vector2.zero);
+            pausePanel = Panel("Pause", new Color(0.01f, 0.02f, 0.04f, 0.8f));
+            Image board=UiSurfacePanel(pausePanel.transform,"Pause menu",new Vector2(620,590),Vector2.zero,UiSurface);
+            UiText(board.transform,"Tạm dừng",52,Color.white,new Vector2(500,90),new Vector2(0,185),TextAnchor.MiddleCenter);
+            UiText(board.transform,"Sẵn sàng tiếp tục hành trình?",28,UiMuted,new Vector2(520,65),new Vector2(0,97),TextAnchor.MiddleCenter);
+            UiAction(board.transform,"TIẾP TỤC",new Vector2(500,76),new Vector2(0,0),UiOrange,ResumeGame);
+            UiAction(board.transform,"CHỌN LÀNG",new Vector2(500,76),new Vector2(0,-97),new Color(.12f,.155f,.22f),ShowLevelMenu);
+            UiAction(board.transform,"CÀI ĐẶT ÂM THANH",new Vector2(500,76),new Vector2(0,-194),new Color(.12f,.155f,.22f),OpenAudioSettings);
             pausePanel.SetActive(false);
         }
 
@@ -457,9 +458,8 @@ namespace LumiAdventure
             var stickControl = stick.gameObject.AddComponent<LumiVirtualStick>();
             stickControl.Knob = knob.rectTransform;
 
-            CreateMobileButton("BẮN", new Vector2(1f, 0f), new Vector2(-170f, 185f), new Color(0.92f, 0.22f, 0.15f, 0.78f), LumiMobileAction.Shoot);
-            CreateMobileButton("NHẢY", new Vector2(1f, 0f), new Vector2(-350f, 125f), new Color(0.1f, 0.7f, 0.82f, 0.78f), LumiMobileAction.Jump);
-            CreateMobileButton("NÓI", new Vector2(1f, 0f), new Vector2(-170f, 350f), new Color(0.55f, 0.35f, 0.82f, 0.78f), LumiMobileAction.Interact);
+            CreateMobileButton("NHẢY", new Vector2(0f, 0f), new Vector2(360f, 120f), new Color(0.1f, 0.7f, 0.82f, 0.78f), LumiMobileAction.Jump);
+            CreateMobileButton("NÓI", new Vector2(0f, 0f), new Vector2(160f, 380f), new Color(0.55f, 0.35f, 0.82f, 0.78f), LumiMobileAction.Interact);
             mobilePanel.SetActive(false);
         }
 
@@ -518,10 +518,20 @@ namespace LumiAdventure
 
         private void SetCursor(bool playing)
         {
-            pointerWasLocked = false;
+            pointerWasLocked = playing && !Application.isMobilePlatform;
             Cursor.lockState = pointerWasLocked ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !pointerWasLocked;
         }
+
+        public void SetMouseLook(bool enabled)
+        {
+            SetCursor(enabled && IsPlaying);
+        }
+        private void OnApplicationFocus(bool focused)
+        {
+            if(!focused){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
+        }
+        private void OnDestroy(){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
 
         private void HideAllPanels()
         {

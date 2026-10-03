@@ -59,7 +59,7 @@ public static class LumiPlayModeValidation
             if(!game.Player.IsInvisible)failures.Add("Level "+level+": invisibility");
             AudioSource[] audio=game.Audio.GetComponents<AudioSource>();
             if(audio.Length<2 || audio[0].clip==null || !audio[0].isPlaying || !audio[0].loop)failures.Add("Level "+level+": music loop missing");
-            if(game.Player.GetComponentInChildren<LumiWeaponVisual>()==null)failures.Add("Level "+level+": chibi pistol missing");
+            if(game.Player.GetComponent<LumiNarutoSkills>()==null)failures.Add("Level "+level+": Naruto skills missing");
             if(level==1)
             {
                 GameObject probe=new GameObject("Projectile regression probe");
@@ -88,7 +88,7 @@ public static class LumiPlayModeValidation
         game.ShowLevelMenu();
         foreach(TextMeshProUGUI label in game.GetComponentsInChildren<TextMeshProUGUI>(true))
             if(label.font==null)failures.Add("Missing SDF font on "+label.name);
-        string report=failures.Count==0?"PASS: five larger levels, routes to distant exits, enemy tiers, pickups, boundaries, health, armor, invisibility initialization, progression preservation, music loops, chibi pistols, backward projectile ownership, stride animation, speed-wind movement/pause and SDF font references.":"FAIL:\n"+string.Join("\n",failures);
+        string report=failures.Count==0?"PASS: five larger levels, routes to distant exits, enemy tiers, pickups, boundaries, health, armor, invisibility initialization, progression preservation, music loops, Naruto skills, backward projectile ownership, stride animation, speed-wind movement/pause and SDF font references.":"FAIL:\n"+string.Join("\n",failures);
         System.IO.File.WriteAllText("Logs/VanguardPlayModeValidation.txt",report);
         Debug.Log(report);
     }

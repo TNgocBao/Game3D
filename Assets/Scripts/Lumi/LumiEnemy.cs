@@ -9,6 +9,9 @@ namespace LumiAdventure
     [RequireComponent(typeof(CharacterController))]
     public class LumiEnemy : MonoBehaviour, ILumiDamageable
     {
+        public static readonly System.Collections.Generic.List<LumiEnemy> Active=new System.Collections.Generic.List<LumiEnemy>();
+        private void OnEnable(){Active.Add(this);}
+        private void OnDisable(){Active.Remove(this);}
         private LumiGame game;
         private LumiPlayer player;
         private CharacterController controller;
@@ -31,8 +34,6 @@ namespace LumiAdventure
         private int pathCorner;
         private float nextPath;
         private Vector3 spawnPoint;
-        private LumiWeaponVisual pistol;
-        private LumiInfantryMotion infantryMotion;
 
         public bool IsAlive => health > 0;
         public LumiEnemyType EnemyType => enemyType;
@@ -75,58 +76,7 @@ namespace LumiAdventure
 
         private void BuildVisual()
         {
-            Transform visual = LumiFactory.WorldObject(enemyType + " Visual", transform, Vector3.zero).transform;
-            GameObject model = LumiArt.CreateEnemyModel(enemyType, visual);
-            if (model != null)
-            {
-                infantryMotion=model.GetComponent<LumiInfantryMotion>();infantryMotion.Configure(game,true);
-                if (enemyType == LumiEnemyType.Ranger)
-                {
-                    GameObject gun = LumiArt.CreateBlaster(infantryMotion.WeaponHand,true);
-                    if (gun != null)
-                    {
-                        gun.transform.localPosition = new Vector3(0,-.14f,.36f);
-                        pistol=gun.GetComponent<LumiWeaponVisual>();
-                    }
-                }
-                else LumiChibiWeapon.Melee(infantryMotion.WeaponHand,enemyType==LumiEnemyType.Golem);
-                return;
-            }
-            Material eye = LumiFactory.Material("EnemyEye", new Color(1f, 0.3f, 0.12f), true);
-            if (enemyType == LumiEnemyType.Sprout)
-            {
-                Material green = LumiFactory.Material("Sprout", new Color(0.3f, 0.78f, 0.28f));
-                LumiFactory.Primitive("Body", PrimitiveType.Sphere, visual, new Vector3(0f, 0.65f, 0f), new Vector3(0.9f, 0.75f, 0.85f), green, false);
-                LumiFactory.Primitive("Leaf L", PrimitiveType.Sphere, visual, new Vector3(-0.2f, 1.28f, 0f), new Vector3(0.22f, 0.42f, 0.12f), green, false).transform.localRotation = Quaternion.Euler(0f, 0f, 35f);
-                LumiFactory.Primitive("Leaf R", PrimitiveType.Sphere, visual, new Vector3(0.2f, 1.28f, 0f), new Vector3(0.22f, 0.42f, 0.12f), green, false).transform.localRotation = Quaternion.Euler(0f, 0f, -35f);
-                AddEyes(visual, eye, 0.66f, 0.25f);
-            }
-            else if (enemyType == LumiEnemyType.Ranger)
-            {
-                Material purple = LumiFactory.Material("Ranger", new Color(0.58f, 0.25f, 0.82f));
-                Material dark = LumiFactory.Material("RangerDark", new Color(0.14f, 0.08f, 0.22f));
-                LumiFactory.Primitive("Body", PrimitiveType.Capsule, visual, new Vector3(0f, 0.78f, 0f), new Vector3(0.68f, 0.72f, 0.68f), purple, false);
-                LumiFactory.Primitive("Hood", PrimitiveType.Sphere, visual, new Vector3(0f, 1.45f, 0f), new Vector3(0.76f, 0.62f, 0.68f), dark, false);
-                LumiFactory.Primitive("Blaster", PrimitiveType.Cube, visual, new Vector3(0.45f, 0.95f, 0.35f), new Vector3(0.18f, 0.18f, 0.55f), purple, false);
-                AddEyes(visual, eye, 1.45f, 0.29f);
-            }
-            else
-            {
-                Material stone = LumiFactory.Material("Golem", new Color(0.38f, 0.42f, 0.48f));
-                Material core = LumiFactory.Material("GolemCore", new Color(1f, 0.34f, 0.08f), true);
-                LumiFactory.Primitive("Torso", PrimitiveType.Cube, visual, new Vector3(0f, 1.25f, 0f), new Vector3(1.2f, 1.5f, 0.8f), stone, false);
-                LumiFactory.Primitive("Head", PrimitiveType.Cube, visual, new Vector3(0f, 2.15f, 0f), new Vector3(0.82f, 0.62f, 0.72f), stone, false);
-                LumiFactory.Primitive("Arm L", PrimitiveType.Cube, visual, new Vector3(-0.8f, 1.25f, 0f), new Vector3(0.42f, 1.4f, 0.52f), stone, false);
-                LumiFactory.Primitive("Arm R", PrimitiveType.Cube, visual, new Vector3(0.8f, 1.25f, 0f), new Vector3(0.42f, 1.4f, 0.52f), stone, false);
-                LumiFactory.Primitive("Core", PrimitiveType.Sphere, visual, new Vector3(0f, 1.35f, 0.43f), Vector3.one * 0.3f, core, false);
-                AddEyes(visual, eye, 2.18f, 0.38f);
-            }
-        }
-
-        private static void AddEyes(Transform visual, Material material, float height, float forward)
-        {
-            LumiFactory.Primitive("Eye L", PrimitiveType.Sphere, visual, new Vector3(-0.16f, height, forward), Vector3.one * 0.1f, material, false);
-            LumiFactory.Primitive("Eye R", PrimitiveType.Sphere, visual, new Vector3(0.16f, height, forward), Vector3.one * 0.1f, material, false);
+            LumiBeastArt.Create(transform,enemyType);
         }
 
         private void Update()
@@ -192,9 +142,7 @@ namespace LumiAdventure
                 nextAttack = Time.time + attackDelay;
                 Vector3 origin = transform.position + Vector3.up * 1.15f + transform.forward * 0.6f;
                 Vector3 target = player.transform.position + Vector3.up * 0.9f;
-                if(pistol!=null)origin=pistol.Muzzle.position;
                 game.SpawnProjectile(origin, (target - origin).normalized, damage, false,transform);
-                if(pistol!=null)pistol.Fire();
             }
         }
 
@@ -249,7 +197,6 @@ namespace LumiAdventure
             if (controller.isGrounded && verticalVelocity < 0f) verticalVelocity = -2f;
             verticalVelocity += -22f * Time.deltaTime;
             controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
-            if(infantryMotion!=null)infantryMotion.SetGrounded(controller.isGrounded);
         }
 
         public void TakeDamage(int amount, Vector3 hitPoint)

@@ -1,0 +1,5 @@
+Source: https://models.spriters-resource.com/pc_computer/narutoshippudenultimateninjastorm2/asset/306699/
+Character: Naruto Uzumaki (Part 2), Naruto Shippuden Ultimate Ninja Storm 2
+Model extraction submitted by ChakraWarrior2012.
+Original character/model rights remain with their respective creators.
+Local adaptation: chibi skeleton proportions and custom technique animation poses.

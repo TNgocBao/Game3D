@@ -13,22 +13,20 @@ namespace LumiAdventure
 
         private void BuildAudioSettings()
         {
-            settingsPanel=Panel("Audio Settings",new Color(.015f,.025f,.045f,.94f));
+            settingsPanel=Panel("Audio Settings",new Color(.01f,.02f,.04f,.82f));
             settingsPanel.GetComponent<Image>().raycastTarget=true;
-            Image board=LumiFactory.Image(settingsPanel.transform,new Color(.07f,.115f,.15f));
-            LumiFactory.Rect(board.rectTransform,new Vector2(.5f,.5f),new Vector2(980,760),Vector2.zero);
+            Image board=UiSurfacePanel(settingsPanel.transform,"Sound preferences",new Vector2(980,820),Vector2.zero,UiSurface);
             UiLabel(board.transform,"CÀI ĐẶT ÂM THANH",46,Color.white,new Vector2(.5f,.88f),new Vector2(850,80),Vector2.zero,TextAnchor.MiddleCenter);
             UiLabel(board.transform,"Điều chỉnh trực tiếp · Tự lưu khi đóng",26,new Color(.7f,.82f,.88f),new Vector2(.5f,.78f),new Vector2(850,45),Vector2.zero,TextAnchor.MiddleCenter);
             masterControl=AudioSlider(board.transform,"Âm lượng tổng",.65f,v=>Audio.MasterVolume=v,out masterPercent);
             musicControl=AudioSlider(board.transform,"Nhạc nền",.49f,v=>Audio.MusicVolume=v,out musicPercent);
             effectsControl=AudioSlider(board.transform,"Hiệu ứng âm thanh",.33f,v=>Audio.EffectsVolume=v,out effectsPercent);
-            Button mute=LumiFactory.Button(board.transform,"",new Color(.22f,.33f,.42f),()=>{Audio.Muted=!Audio.Muted;UpdateMuteLabel();});
-            LumiFactory.Rect(mute.GetComponent<RectTransform>(),new Vector2(.5f,.17f),new Vector2(820,60),Vector2.zero);
+            Button mute=UiAction(board.transform,"",new Vector2(820,60),new Vector2(0,-271),new Color(.12f,.155f,.22f),()=>{Audio.Muted=!Audio.Muted;UpdateMuteLabel();});
             muteLabel=mute.GetComponentInChildren<Text>();
-            Button reset=LumiFactory.Button(board.transform,"MẶC ĐỊNH",new Color(.22f,.33f,.42f),()=>{
+            Button reset=UiAction(board.transform,"MẶC ĐỊNH",new Vector2(390,64),new Vector2(-215,-357),new Color(.12f,.155f,.22f),()=>{
                 Audio.MasterVolume=1;Audio.MusicVolume=.55f;Audio.EffectsVolume=.65f;Audio.Muted=false;RefreshAudioControls();Audio.Play("ui");});
             LumiFactory.Rect(reset.GetComponent<RectTransform>(),new Vector2(.5f,.065f),new Vector2(390,64),new Vector2(-215,0));
-            Button close=LumiFactory.Button(board.transform,"LƯU & ĐÓNG",new Color(.26f,.52f,.42f),CloseAudioSettings);
+            Button close=UiAction(board.transform,"LƯU & ĐÓNG",new Vector2(390,64),new Vector2(215,-357),UiOrange,CloseAudioSettings);
             LumiFactory.Rect(close.GetComponent<RectTransform>(),new Vector2(.5f,.065f),new Vector2(390,64),new Vector2(215,0));
             settingsPanel.SetActive(false);
         }
@@ -36,14 +34,14 @@ namespace LumiAdventure
         private Slider AudioSlider(Transform parent,string label,float y,UnityEngine.Events.UnityAction<float> apply,out Text percentage)
         {
             UiLabel(parent,label,30,Color.white,new Vector2(.5f,y+.045f),new Vector2(650,45),new Vector2(-85,0));
-            percentage=LumiFactory.Text(parent,"",28,TextAnchor.MiddleRight,new Color(.95f,.82f,.48f));
+            percentage=LumiFactory.Text(parent,"",32,TextAnchor.MiddleRight,UiOrange);
             LumiFactory.Rect(percentage.rectTransform,new Vector2(.5f,y+.045f),new Vector2(160,45),new Vector2(330,0));
             Text valueLabel=percentage;
             Image track=LumiFactory.Image(parent,new Color(.025f,.05f,.07f));
             LumiFactory.Rect(track.rectTransform,new Vector2(.5f,y-.017f),new Vector2(820,32),Vector2.zero);
-            Image fill=LumiFactory.Image(track.transform,new Color(.42f,.72f,.63f));LumiFactory.Stretch(fill.rectTransform,4);
+            Image fill=LumiFactory.Image(track.transform,UiOrange);LumiFactory.Stretch(fill.rectTransform,4);
             fill.raycastTarget=false;
-            Image handle=LumiFactory.Image(track.transform,new Color(.99f,.89f,.63f));
+            Image handle=LumiFactory.Image(track.transform,Color.white);handle.sprite=RoundedPanelSprite();handle.type=Image.Type.Sliced;
             handle.rectTransform.sizeDelta=new Vector2(24,44);handle.raycastTarget=false;
             Slider slider=track.gameObject.AddComponent<Slider>();
             slider.fillRect=fill.rectTransform;slider.handleRect=handle.rectTransform;slider.targetGraphic=handle;

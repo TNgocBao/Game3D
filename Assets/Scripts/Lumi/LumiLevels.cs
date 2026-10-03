@@ -28,15 +28,14 @@ namespace LumiAdventure
             RenderSettings.fog = true;
             RenderSettings.fogColor = config.Fog;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 38f;
-            RenderSettings.fogEndDistance = 105f;
+            RenderSettings.fogStartDistance = level==5?18f:45f;
+            RenderSettings.fogEndDistance = level==5?65f:140f;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = level>=4 ? new Color(.17f,.2f,.23f)
-                : Color.Lerp(config.Sky,new Color(.55f,.52f,.44f),.7f)*.65f;
+            RenderSettings.ambientLight = Color.Lerp(config.Sky,new Color(.65f,.62f,.55f),.7f)*.75f;
 
             BuildLighting(config, level);
             BuildBoundaries(config);
-            BuildReferenceArena(config, level);
+            BuildVillage(config, level);
             Physics.SyncTransforms();
             worldRoot.gameObject.AddComponent<LumiNavigation>().Build(worldRoot, config.Width, config.Depth);
 
@@ -63,6 +62,7 @@ namespace LumiAdventure
             directionArrow = arrowObject.AddComponent<LumiDirectionArrow>();
             directionArrow.Initialize(Player.transform, goal);
 
+            SpawnVillageBoss(level,config);
             SpawnEnemies(config);
             SpawnStars(config);
             SpawnItems(config);
@@ -76,27 +76,20 @@ namespace LumiAdventure
             lightObject.transform.rotation = Quaternion.Euler(42f, level * 34f - 70f, 0f);
             var light = lightObject.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.color = level == 4 ? new Color(1f, 0.58f, 0.35f) : Color.Lerp(Color.white, config.Accent, 0.18f);
+            light.color = Color.Lerp(Color.white, config.Accent, 0.08f);
             light.intensity = level == 3 ? 0.9f : 1.15f;
             light.shadows = LightShadows.Soft;
             light.shadowStrength = 0.72f;
+            // Soft opposing portrait lights keep the chibi face readable as the player turns.
+            AddCharacterFill("Naruto warm key",new Vector3(28,155,0),new Color(1,.94f,.86f),.95f);
+            AddCharacterFill("Naruto cool fill",new Vector3(35,-25,0),new Color(.82f,.9f,1),.55f);
 
-            if (level == 4 || level == 5)
-            {
-                for (int i = -2; i <= 2; i++)
-                {
-                    var pointObject = new GameObject("Đèn môi trường");
-                    pointObject.transform.SetParent(worldRoot, false);
-                    pointObject.transform.position = RoutePoint(config.Route,(i+2.5f)/5f)+Vector3.up*3;
-                    var point = pointObject.AddComponent<Light>();
-                    point.type = LightType.Point;
-                    point.range = 18f;
-                    point.intensity = 2f;
-                    point.color = level == 4
-                        ? (i % 2 == 0 ? new Color(1f, 0.48f, 0.16f) : new Color(0.25f, 1f, 0.36f))
-                        : config.Accent;
-                }
-            }
+        }
+
+        private void AddCharacterFill(string name,Vector3 rotation,Color color,float intensity)
+        {
+            var obj=new GameObject(name);obj.transform.SetParent(worldRoot,false);obj.transform.rotation=Quaternion.Euler(rotation);
+            var light=obj.AddComponent<Light>();light.type=LightType.Directional;light.color=color;light.intensity=intensity;light.cullingMask=1<<30;light.shadows=LightShadows.None;
         }
 
         private void BuildBoundaries(LevelConfig config)
@@ -106,8 +99,7 @@ namespace LumiAdventure
             ground.mainTextureScale = new Vector2(config.Width / 5f, config.Depth / 5f);
             Material wall = LumiFactory.Material("Boundary" + currentLevel, config.Wall);
             CreateBlock("Mặt đất", Vector3.down * 0.5f, new Vector3(config.Width, 1f, config.Depth), ground);
-            if(currentLevel<=3)
-                CreateBlock("Scenic ground",Vector3.down*1.1f,new Vector3(config.Width+38f,1f,config.Depth+32f),ground);
+            CreateBlock("Scenic ground",Vector3.down*1.1f,new Vector3(config.Width+38f,1f,config.Depth+32f),ground);
             float h = 2.5f;
             HideBoundary(CreateBlock("Tường Bắc", new Vector3(0f, h * 0.5f, config.Depth * 0.5f), new Vector3(config.Width + 2f, h, 1.4f), wall));
             HideBoundary(CreateBlock("Tường Nam", new Vector3(0f, h * 0.5f, -config.Depth * 0.5f), new Vector3(config.Width + 2f, h, 1.4f), wall));
@@ -118,7 +110,7 @@ namespace LumiAdventure
         private void HideBoundary(GameObject boundary)
         {
             Renderer renderer = boundary.GetComponent<Renderer>();
-            if (renderer != null) renderer.enabled = currentLevel >= 4;
+            if (renderer != null) renderer.enabled = false;
         }
 
         private void SpawnEnemies(LevelConfig config)
@@ -271,37 +263,37 @@ namespace LumiAdventure
             {
                 case 1: return new LevelConfig
                 {
-                    Name = "Rừng Tiền Tuyến", Width = 82f, Depth = 108f,
+                    Name = "Làng Lá", Width = 96f, Depth = 140f,
                     Ground = new Color(.25f,.38f,.25f), Wall = new Color(0.12f, 0.34f, 0.18f),
                     Sky = new Color(0.42f, 0.72f, 0.92f), Fog = new Color(0.55f, 0.78f, 0.72f), Accent = new Color(0.15f, 0.95f, 0.62f),
                     Sprouts = 12, Rangers = 0, Golems = 0, Intelligence = 1f
                 };
                 case 2: return new LevelConfig
                 {
-                    Name = "Hẻm Núi Sa Mạc", Width = 76f, Depth = 124f,
+                    Name = "Làng Cát", Width = 110f, Depth = 150f,
                     Ground = new Color(0.72f, 0.47f, 0.2f), Wall = new Color(0.48f, 0.28f, 0.12f),
                     Sky = new Color(0.92f, 0.58f, 0.28f), Fog = new Color(0.82f, 0.55f, 0.3f), Accent = new Color(1f, 0.66f, 0.12f),
                     Sprouts = 15, Rangers = 5, Golems = 0, Intelligence = 1.6f
                 };
                 case 3: return new LevelConfig
                 {
-                    Name = "Thung Lũng Băng", Width = 96f, Depth = 112f,
-                    Ground = new Color(0.55f, 0.76f, 0.86f), Wall = new Color(0.2f, 0.42f, 0.62f),
-                    Sky = new Color(0.2f, 0.5f, 0.78f), Fog = new Color(0.55f, 0.78f, 0.9f), Accent = new Color(0.25f, 0.88f, 1f),
+                    Name = "Làng Đá", Width = 110f, Depth = 156f,
+                    Ground = new Color(.49f,.46f,.39f), Wall = new Color(0.2f, 0.42f, 0.62f),
+                    Sky = new Color(.55f,.68f,.77f), Fog = new Color(.62f,.64f,.6f), Accent = new Color(0.25f, 0.88f, 1f),
                     Sprouts = 18, Rangers = 8, Golems = 0, Intelligence = 2.3f
                 };
                 case 4: return new LevelConfig
                 {
-                    Name = "Hầm Ngục Độc", Width = 88f, Depth = 128f,
-                    Ground = new Color(0.09f, 0.12f, 0.11f), Wall = new Color(0.16f, 0.19f, 0.17f),
-                    Sky = new Color(0.035f, 0.045f, 0.055f), Fog = new Color(0.08f, 0.14f, 0.1f), Accent = new Color(0.25f, 1f, 0.36f),
+                    Name = "Làng Mây", Width = 106f, Depth = 160f,
+                    Ground = new Color(.57f,.62f,.56f), Wall = new Color(0.16f, 0.19f, 0.17f),
+                    Sky = new Color(.63f,.8f,.94f), Fog = new Color(.83f,.9f,.95f), Accent = new Color(0.25f, 1f, 0.36f),
                     Sprouts = 16, Rangers = 9, Golems = 4, Intelligence = 3f
                 };
                 default: return new LevelConfig
                 {
-                    Name = "Pháo Đài Công Nghệ", Width = 100f, Depth = 144f,
-                    Ground = new Color(0.055f, 0.065f, 0.12f), Wall = new Color(0.1f, 0.04f, 0.16f),
-                    Sky = new Color(0.025f, 0.02f, 0.08f), Fog = new Color(0.08f, 0.03f, 0.15f), Accent = new Color(0.12f, 0.95f, 1f),
+                    Name = "Làng Sương Mù", Width = 110f, Depth = 150f,
+                    Ground = new Color(.36f,.45f,.42f), Wall = new Color(0.1f, 0.04f, 0.16f),
+                    Sky = new Color(.52f,.67f,.73f), Fog = new Color(.64f,.77f,.8f), Accent = new Color(0.12f, 0.95f, 1f),
                     Sprouts = 22, Rangers = 12, Golems = 6, Intelligence = 4f
                 };
             }

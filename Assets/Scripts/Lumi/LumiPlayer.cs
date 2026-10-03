@@ -15,7 +15,6 @@ namespace LumiAdventure
         private Transform muzzle;
         private GameObject shieldVisual;
         private float verticalVelocity;
-        private readonly LumiShotGate shotGate=new LumiShotGate();
         private float speedMultiplier = 1f;
         private float speedUntil;
         private float invisibleUntil;
@@ -23,14 +22,12 @@ namespace LumiAdventure
         private float idleTime;
         private bool wasGrounded;
         private LumiInfantryMotion infantryMotion;
-        private LumiWeaponVisual pistol;
+        private LumiNarutoSkills skills;
         private Vector3 safeRespawnPoint;
         private float nextFallRecovery;
         private Coroutine invisibilityRoutine;
         private Renderer[] ghostRenderers;
         private Material[][] originalMaterials;
-        [SerializeField, Min(.01f)] private float shotCooldown = 1f;
-        [SerializeField, Min(1)] private int shotDamage = 4;
         [SerializeField, Min(.1f)] private float movementSpeed = 5.2f;
 
         public int Health { get; private set; } = MaxHealth;
@@ -40,6 +37,8 @@ namespace LumiAdventure
         public bool IsSpeedBoosted => Time.time < speedUntil;
         public float IdleTime => idleTime;
         public Transform Muzzle => muzzle;
+        public CharacterController Controller=>controller;
+        public Transform ChakraHand=>infantryMotion.ChakraHand;
 
         public void Initialize(LumiGame owner)
         {
@@ -55,47 +54,17 @@ namespace LumiAdventure
             for (int i=0;i<ghostRenderers.Length;i++) originalMaterials[i] = ghostRenderers[i].sharedMaterials;
             hitFlash = gameObject.AddComponent<LumiHitFlash>();
             gameObject.AddComponent<LumiSpeedWind>().Initialize(this,game);
+            skills=gameObject.AddComponent<LumiNarutoSkills>();skills.Initialize(this,game);
             lastPosition = transform.position;
             safeRespawnPoint = transform.position;
         }
 
         private void BuildVisual()
         {
-            Transform visual = LumiFactory.WorldObject("Nova Visual", transform, Vector3.zero).transform;
-            GameObject character = LumiArt.CreatePlayer(visual);
-            if (character != null)
-            {
-                infantryMotion=character.GetComponent<LumiInfantryMotion>();infantryMotion.Configure(game,false);
-                GameObject gun = LumiArt.CreateBlaster(infantryMotion.WeaponHand);
-                if (gun != null)
-                {
-                    gun.transform.localPosition = new Vector3(0f,-.14f,.36f);
-                    pistol=gun.GetComponent<LumiWeaponVisual>();
-                }
-                muzzle = pistol.Muzzle;
-                BuildShield(visual);
-                return;
-            }
-
-            Material body = LumiFactory.Material("LumiBody", new Color(0.15f, 0.75f, 0.9f));
-            Material cream = LumiFactory.Material("LumiCream", new Color(0.95f, 0.95f, 0.82f));
-            Material dark = LumiFactory.Material("LumiDark", new Color(0.06f, 0.12f, 0.18f));
-            Material glow = LumiFactory.Material("LumiGlow", new Color(0.25f, 1f, 0.9f), true);
-
-            LumiFactory.Primitive("Body", PrimitiveType.Capsule, visual, new Vector3(0f, 0.95f, 0f), new Vector3(0.72f, 0.62f, 0.62f), body, false);
-            LumiFactory.Primitive("Head", PrimitiveType.Sphere, visual, new Vector3(0f, 1.68f, 0f), new Vector3(0.82f, 0.68f, 0.72f), cream, false);
-            LumiFactory.Primitive("Face", PrimitiveType.Cube, visual, new Vector3(0f, 1.67f, 0.34f), new Vector3(0.56f, 0.28f, 0.08f), dark, false);
-            LumiFactory.Primitive("Eye L", PrimitiveType.Sphere, visual, new Vector3(-0.16f, 1.7f, 0.405f), Vector3.one * 0.09f, glow, false);
-            LumiFactory.Primitive("Eye R", PrimitiveType.Sphere, visual, new Vector3(0.16f, 1.7f, 0.405f), Vector3.one * 0.09f, glow, false);
-            LumiFactory.Primitive("Antenna", PrimitiveType.Cylinder, visual, new Vector3(0f, 2.12f, 0f), new Vector3(0.045f, 0.18f, 0.045f), dark, false);
-            LumiFactory.Primitive("Antenna Light", PrimitiveType.Sphere, visual, new Vector3(0f, 2.34f, 0f), Vector3.one * 0.12f, glow, false);
-            LumiFactory.Primitive("Leg L", PrimitiveType.Capsule, visual, new Vector3(-0.23f, 0.35f, 0f), new Vector3(0.24f, 0.34f, 0.24f), dark, false);
-            LumiFactory.Primitive("Leg R", PrimitiveType.Capsule, visual, new Vector3(0.23f, 0.35f, 0f), new Vector3(0.24f, 0.34f, 0.24f), dark, false);
-            LumiFactory.Primitive("Arm L", PrimitiveType.Capsule, visual, new Vector3(-0.52f, 1.05f, 0.08f), new Vector3(0.18f, 0.42f, 0.18f), body, false).transform.localRotation = Quaternion.Euler(12f, 0f, -18f);
-            LumiFactory.Primitive("Arm R", PrimitiveType.Capsule, visual, new Vector3(0.52f, 1.05f, 0.12f), new Vector3(0.18f, 0.42f, 0.18f), body, false).transform.localRotation = Quaternion.Euler(70f, 0f, 8f);
-            LumiFactory.Primitive("Blaster", PrimitiveType.Cube, visual, new Vector3(0.48f, 1.22f, 0.48f), new Vector3(0.2f, 0.2f, 0.62f), dark, false);
-            muzzle = LumiFactory.WorldObject("Muzzle", visual, new Vector3(0.48f, 1.22f, 0.86f)).transform;
-
+            Transform visual=LumiFactory.WorldObject("Naruto Visual",transform,Vector3.zero).transform;
+            GameObject character=LumiArt.CreatePlayer(visual);
+            infantryMotion=character.GetComponent<LumiInfantryMotion>();infantryMotion.Configure(game,false);
+            muzzle=LumiFactory.WorldObject("Strike aim",visual,new Vector3(0,1.1f,.55f)).transform;
             BuildShield(visual);
         }
 
@@ -156,10 +125,11 @@ namespace LumiAdventure
         {
             bool wantsShoot = Input.GetMouseButton(0) || LumiMobileInput.ConsumeShoot();
             if(game.IsPointerOverUi())return;
+            if(!Application.isMobilePlatform && (!game.CameraRig.MouseLookActive || game.CameraRig.ReacquiredThisFrame))return;
             Vector3 pointer=Input.mousePosition;
             if(!Application.isMobilePlatform && (pointer.x<0 || pointer.x>Screen.width || pointer.y<0 || pointer.y>Screen.height))return;
 
-            Ray ray = game.CameraRig.ViewCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = game.CameraRig.ViewCamera.ViewportPointToRay(new Vector3(.5f,.5f,0));
             Vector3 aimOrigin=transform.position+Vector3.up*1.1f;
             Vector3 target = aimOrigin + game.CameraRig.FlatForward * 30f;
             Plane aimPlane = new Plane(Vector3.up, aimOrigin);
@@ -175,16 +145,13 @@ namespace LumiAdventure
                 target = assisted != null ? assisted.AimPoint : muzzle.position + transform.forward * 30f;
             }
             Vector3 flatAim=target-aimOrigin;flatAim.y=0;
+            if(!Application.isMobilePlatform){flatAim=game.CameraRig.FlatForward;target=aimOrigin+flatAim*30f;}
             if(flatAim.sqrMagnitude<.36f)target=aimOrigin+transform.forward*30;
-            else transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(flatAim),720f*Time.deltaTime);
+            else transform.rotation=Application.isMobilePlatform?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(flatAim),720f*Time.deltaTime):Quaternion.LookRotation(flatAim);
             Vector3 direction=(target-muzzle.position).normalized;
             if(direction.sqrMagnitude<.001f)direction=transform.forward;
             if(!wantsShoot)return;
-            if(!shotGate.TryConsume(Time.time,shotCooldown))return;
-            game.SpawnProjectile(muzzle.position, direction, shotDamage, true,transform);
-            game.SpawnImpact(muzzle.position, new Color(0.2f, 0.95f, 1f));
-            if(pistol!=null)pistol.Fire();
-            game.Audio.Play("shoot");
+            if(skills!=null)skills.TryBasicAttack();
         }
 
         private LumiEnemy FindAimAssistTarget()
@@ -192,7 +159,7 @@ namespace LumiAdventure
             Camera camera = game.CameraRig.ViewCamera;
             LumiEnemy best = null;
             float bestScore = 0.16f;
-            foreach (LumiEnemy enemy in FindObjectsOfType<LumiEnemy>())
+            foreach (LumiEnemy enemy in LumiEnemy.Active)
             {
                 if (!enemy.IsAlive) continue;
                 Vector3 viewport = camera.WorldToViewportPoint(enemy.AimPoint);

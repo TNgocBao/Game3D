@@ -29,7 +29,7 @@ namespace LumiAdventure
 
         public static GameObject CreatePlayer(Transform parent)
         {
-            return LumiCharacterArt.Soldier(parent, new Color(.28f,.37f,.43f));
+            return LumiNarutoArt.Create(parent);
         }
 
         public static GameObject CreateBlaster(Transform parent, bool large = false)
