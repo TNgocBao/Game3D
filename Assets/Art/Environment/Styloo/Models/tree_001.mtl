@@ -1,0 +1,5 @@
+newmtl tree_001_0
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd tree_001_0.png

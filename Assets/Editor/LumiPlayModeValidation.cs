@@ -24,7 +24,7 @@ public static class LumiPlayModeValidation
         int unlocked=PlayerPrefs.GetInt("Lumi.Unlocked",1);
         for(int level=1;level<=5;level++)
         {
-            game.StartLevel(level);
+            game.StartLevelForValidation(level);
             yield return null;
             if(game.Player.Health!=15)failures.Add("Level "+level+": player HP");
             if(game.CameraRig.ViewCamera.orthographic)failures.Add("Level "+level+": expected perspective camera");

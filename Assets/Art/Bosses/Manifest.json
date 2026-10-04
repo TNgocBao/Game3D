@@ -1,0 +1,9 @@
+{
+  "author": "Original project-authored stylized interpretations",
+  "tool": "Blender 4.5.3 bpy",
+  "models": [],
+  "skillMeshes": 10,
+  "clips": [],
+  "thirdPartyAssets": [],
+  "note": "All newly authored character models rejected and removed at user request. Existing five characters retained; Blender mesh assets are skill effects only."
+}

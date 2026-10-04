@@ -1,0 +1,16 @@
+using UnityEngine;
+namespace LumiAdventure {
+public sealed class LumiBossSkillVisual:MonoBehaviour {
+ static Material particleMaterial;
+ LumiGame game;int village;bool second;float age,duration;Quaternion initial;Transform[] golemArms;Quaternion[] armRest;
+ public void Initialize(LumiGame owner,int type,bool phase,float life){game=owner;village=type;second=phase;duration=life;initial=transform.rotation;CreateParticles();if(village==1 && second){var arms=new System.Collections.Generic.List<Transform>();foreach(var child in GetComponentsInChildren<Transform>())if(child.name.StartsWith("GolemArm"))arms.Add(child);golemArms=arms.ToArray();armRest=new Quaternion[golemArms.Length];for(int i=0;i<golemArms.Length;i++)armRest[i]=golemArms[i].localRotation;}}
+ void CreateParticles(){var obj=new GameObject("Element particles");obj.transform.SetParent(transform,false);obj.transform.localPosition=Vector3.up*.5f;var ps=obj.AddComponent<ParticleSystem>();ps.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);var main=ps.main;main.duration=duration;main.loop=false;main.startLifetime=village==5?1.5f:.65f;main.startSpeed=village==3?.3f:1.8f;main.startSize=village==5&&second?.55f:.12f;main.maxParticles=220;main.simulationSpace=ParticleSystemSimulationSpace.World;Color color=village==1?new Color(.35f,.5f,.14f):village==2?new Color(.82f,.60f,.3f):village==3?new Color(.7f,.9f,1):village==4?new Color(.2f,.65f,1):second?new Color(.5f,.85f,.65f,.3f):new Color(1,.2f,.015f);main.startColor=color;var emission=ps.emission;emission.rateOverTime=second?75:45;var shape=ps.shape;shape.shapeType=ParticleSystemShapeType.Sphere;shape.radius=village==3?.4f:1.5f;var size=ps.sizeOverLifetime;size.enabled=true;size.size=new ParticleSystem.MinMaxCurve(1,AnimationCurve.EaseInOut(0,1,1,0));if(particleMaterial==null){particleMaterial=new Material(Shader.Find("Legacy Shaders/Particles/Additive"));var texture=new Texture2D(32,32,TextureFormat.RGBA32,false);for(int y=0;y<32;y++)for(int x=0;x<32;x++){float d=Vector2.Distance(new Vector2(x,y),new Vector2(15.5f,15.5f))/15.5f;texture.SetPixel(x,y,new Color(1,1,1,Mathf.Pow(Mathf.Clamp01(1-d),2)));}texture.Apply();particleMaterial.mainTexture=texture;}var material=particleMaterial;var renderer=ps.GetComponent<ParticleSystemRenderer>();renderer.sharedMaterial=material;ps.Play();}
+ void Update(){if(game==null){Destroy(gameObject);return;}if(!game.IsPlaying)return;age+=Time.deltaTime;float t=age/Mathf.Max(duration,.01f);
+ if(golemArms!=null)for(int i=0;i<golemArms.Length;i++)golemArms[i].localRotation=armRest[i]*Quaternion.Euler(Mathf.Sin(t*Mathf.PI*2)*55,0,0);
+ if(village==1)transform.rotation=initial*Quaternion.Euler(Mathf.Sin(t*Mathf.PI)* (second?22:8),Mathf.Sin(t*Mathf.PI)*12,0);
+ if(village==2){if(second)transform.position+=initial*Vector3.forward*Time.deltaTime*1.7f;else transform.rotation=initial*Quaternion.Euler(0,age*35,0);}
+ if(village==3 && !second)transform.rotation=initial*Quaternion.Euler(0,age*15,0);
+ if(village==5 && second)transform.rotation=initial*Quaternion.Euler(0,age*15,0);
+ }
+}
+}

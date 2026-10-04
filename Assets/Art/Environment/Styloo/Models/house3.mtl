@@ -1,0 +1,20 @@
+newmtl house3_0
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house3_0.png
+newmtl house3_1
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house3_1.png
+newmtl house3_2
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house3_2.png
+newmtl house3_3
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house3_3.png

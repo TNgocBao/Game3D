@@ -5,6 +5,20 @@ namespace LumiAdventure
     public static class LumiBossArt
     {
         private static GameObject Part(string name,PrimitiveType shape,Transform parent,Vector3 position,Vector3 scale,Material material)=>LumiFactory.Primitive(name,shape,parent,position,scale,material,false);
+        private static void AddJoints(Transform root)
+        {
+            Transform body=new GameObject("Body pivot").transform;body.SetParent(root,false);body.localPosition=new Vector3(0,.9f,0);
+            Transform head=new GameObject("Head pivot").transform;head.SetParent(body,false);head.position=root.TransformPoint(new Vector3(0,1.52f,0));
+            var children=new System.Collections.Generic.List<Transform>();foreach(Transform child in root)children.Add(child);
+            foreach(Transform child in children){if(child==body || child.name.Contains("leg"))continue;bool face=child.localPosition.y>1.5f || child.name.Contains("hair") || child.name.Contains("moustache");child.SetParent(face?head:body,true);}
+            foreach(string side in new[]{"Left","Right"}){
+                Transform arm=null,leg=null;foreach(Transform t in root.GetComponentsInChildren<Transform>()){if(t.name==side+" arm")arm=t;if(t.name==side+" leg")leg=t;}
+                if(arm!=null){Transform elbow=new GameObject(side+" elbow").transform;elbow.SetParent(arm,false);elbow.localPosition=new Vector3(0,-.27f,0);var pieces=new System.Collections.Generic.List<Transform>();foreach(Transform t in arm)pieces.Add(t);foreach(Transform t in pieces)if(t.name=="Hand"){t.SetParent(elbow,true);Transform palm=new GameObject(side+" hand").transform;palm.SetParent(elbow,false);palm.localPosition=new Vector3(0,-.21f,.08f);}foreach(Transform t in pieces)if(t.name=="Sleeve"){t.localPosition=new Vector3(0,-.12f,0);t.localScale=new Vector3(t.localScale.x,.15f,t.localScale.z);var fore=Object.Instantiate(t.gameObject,elbow,false);fore.name="Forearm";fore.transform.localPosition=new Vector3(0,-.09f,0);fore.transform.localScale=new Vector3(t.localScale.x*.85f,.12f,t.localScale.z*.85f);}}
+                if(leg!=null){Transform knee=new GameObject(side+" knee").transform;knee.SetParent(leg,false);knee.localPosition=new Vector3(0,-.24f,0);Transform foot=new GameObject(side+" foot").transform;foot.SetParent(knee,false);foot.localPosition=new Vector3(0,-.25f,.1f);Transform sandal=null;foreach(Transform t in leg)if(t.name=="Ninja sandal")sandal=t;if(sandal!=null)sandal.SetParent(foot,true);Transform shin=null;foreach(Transform t in leg)if(t.name=="Shin")shin=t;if(shin!=null){shin.localPosition=new Vector3(0,-.1f,0);shin.localScale=new Vector3(shin.localScale.x,.14f,shin.localScale.z);var calf=Object.Instantiate(shin.gameObject,knee,false);calf.name="Lower shin";calf.transform.localPosition=new Vector3(0,-.12f,0);calf.transform.localScale=new Vector3(shin.localScale.x,.12f,shin.localScale.z);}}
+            }
+            var accessories=new System.Collections.Generic.List<Transform>();foreach(Transform t in body)if(t.name=="Golden wrist guard" || t.name=="Armour shoulder")accessories.Add(t);
+            foreach(Transform t in accessories){string side=root.InverseTransformPoint(t.position).x<0?"Left":"Right";foreach(Transform joint in root.GetComponentsInChildren<Transform>())if(joint.name==side+(t.name=="Golden wrist guard"?" elbow":" arm")){t.SetParent(joint,true);break;}}
+        }
         public static GameObject Create(Transform parent,int village)
         {
             Transform root=LumiFactory.WorldObject("Kage chibi 3D",parent,Vector3.zero).transform;
@@ -66,6 +80,7 @@ namespace LumiAdventure
                 Part("Long copper hair back",PrimitiveType.Capsule,root,new Vector3(0,1.36f,-.35f),new Vector3(.72f,.63f,.3f),hair);
                 Part("Mei neckline",PrimitiveType.Cube,root,new Vector3(0,1.29f,.3f),new Vector3(.46f,.16f,.08f),skin);
             }
+            AddJoints(root);
             root.gameObject.AddComponent<LumiInfantryMotion>();return root.gameObject;
         }
     }

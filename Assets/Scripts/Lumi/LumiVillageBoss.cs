@@ -12,10 +12,21 @@ namespace LumiAdventure
         private CharacterController controller;
         private LumiHitFlash flash;
         private LumiInfantryMotion motion;
+        private GameObject castWarning,castAura;
+        private int skillSequence;
+        private readonly System.Collections.Generic.List<GameObject> releasedEffects=new System.Collections.Generic.List<GameObject>();
         private Vector3 home;
         private int village,health,maxHealth;
         private float nextSkill,nextMelee,gravity;
         private bool casting,engaged;
+        private LumiCombatTactics tactics;
+        private Component combatTarget;
+        private float healing;
+        public void Heal(float amount){if(!IsAlive)return;healing+=amount;int whole=Mathf.FloorToInt(healing);healing-=whole;health=Mathf.Min(maxHealth,health+whole);}
+        public int MaxHealth=>maxHealth;
+        public bool SecondPhaseUnlocked {get;private set;}
+        private float MoveSpeed=>2.1f+(village-1)*.3f;
+        private int ScaleDamage(int value)=>Mathf.Max(1,Mathf.RoundToInt(value*(1+.15f*(village-1))));
         public bool IsAlive=>health>0;
         public float HealthFraction=>health/(float)maxHealth;
         public string BossName=>Names[village-1];
@@ -24,121 +35,70 @@ namespace LumiAdventure
         public bool Engaged=>engaged && IsAlive;
         public void Initialize(LumiGame owner,int level)
         {
-            game=owner;village=level;home=transform.position;maxHealth=72+level*12;health=maxHealth;
+            game=owner;village=level;home=transform.position;maxHealth=(72+level*12)*2;health=maxHealth;
             controller=GetComponent<CharacterController>();controller.height=2.4f;controller.radius=.55f;controller.center=Vector3.up*1.2f;
-            GameObject model=LumiBossArt.Create(transform,village);motion=model.GetComponent<LumiInfantryMotion>();motion.Configure(game,true);
+            GameObject model=LumiBossArt.Create(transform,village);motion=model.GetComponent<LumiInfantryMotion>();if(motion!=null)motion.Configure(game,true);
+            LumiHealingAltar.Create(game,transform.parent,home);tactics=gameObject.AddComponent<LumiCombatTactics>();tactics.Initialize(game,controller);
             flash=gameObject.AddComponent<LumiHitFlash>();nextSkill=Time.time+2;
         }
         private void Update()
         {
             if(!IsAlive || game==null || !game.IsPlaying || !game.Player.IsAlive)return;
-            LumiPlayer player=game.Player;Vector3 delta=player.transform.position-transform.position;delta.y=0;
+            if(tactics==null){tactics=GetComponent<LumiCombatTactics>()??gameObject.AddComponent<LumiCombatTactics>();tactics.Initialize(game,controller);}
+            LumiPlayer player=game.Player;combatTarget=LumiCombatTactics.IsContested(player,transform.position)?player:LumiCombatTactics.SelectTarget(player,transform.position,25,true);
+            Vector3 delta=(combatTarget!=null?combatTarget.transform.position:player.transform.position)-transform.position;delta.y=0;
             if(!engaged && delta.magnitude<22){engaged=true;game.ShowToast(BossName+" — "+Element,new Color(1,.7f,.25f));nextSkill=Time.time+1.5f;}
             if(!engaged)return;
-            if(!casting)
+            if(tactics.Tick(HealthFraction,MoveSpeed,amount=>Heal(maxHealth*amount))){if(casting){StopAllCoroutines();casting=false;motion?.CancelTechnique();ClearCast();}ApplyGravity();return;}
+            if(!casting && combatTarget!=null)
             {
                 if(delta.sqrMagnitude>.1f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(delta),360*Time.deltaTime);
-                if(Vector3.Distance(player.transform.position,home)<25 && delta.magnitude>3 && !player.IsInvisible)controller.Move(delta.normalized*(village==4?3.2f:2.1f)*Time.deltaTime);
-                if(delta.magnitude<2.1f && Time.time>nextMelee && !player.IsInvisible)
-                {nextMelee=Time.time+1.8f;motion.PlayTechnique(LumiTechnique.BasicAttack,.45f);player.TakeDamage(2,player.transform.position+Vector3.up);}
-                if(Time.time>=nextSkill && delta.magnitude<25 && !player.IsInvisible)
-                {nextSkill=Time.time+(HealthFraction<.5f?4.2f:5.8f);StartCoroutine(ExclusiveSkill());}
+                if(Vector3.Distance(player.transform.position,home)<25 && delta.magnitude>3 && combatTarget!=null)controller.Move(delta.normalized*(MoveSpeed)*Time.deltaTime);
+                if(delta.magnitude<2.1f && Time.time>nextMelee && combatTarget!=null)
+                {nextMelee=Time.time+1.8f;motion?.PlayTechnique(LumiTechnique.BasicAttack,.45f);((ILumiDamageable)combatTarget).TakeDamage(ScaleDamage(2),combatTarget.transform.position+Vector3.up);}
+                if(Time.time>=nextSkill && delta.magnitude<25 && combatTarget!=null)
+                {nextSkill=Time.time+(SecondPhaseUnlocked?4.2f-(village-1)*.2f:5.8f-(village-1)*.25f);StartCoroutine(ExclusiveSkill());}
             }
-            if(controller.isGrounded && gravity<0)gravity=-2;gravity-=22*Time.deltaTime;controller.Move(Vector3.up*gravity*Time.deltaTime);motion.SetGrounded(controller.isGrounded);
+            ApplyGravity();
         }
+        private void ApplyGravity()
+        {
+            if(controller.isGrounded && gravity<0)gravity=-2;gravity-=22*Time.deltaTime;controller.Move(Vector3.up*gravity*Time.deltaTime);motion?.SetGrounded(controller.isGrounded);
+        }
+        private void ClearCast(){if(castWarning!=null)Destroy(castWarning);if(castAura!=null)Destroy(castAura);}
         private IEnumerator ExclusiveSkill()
         {
-            casting=true;motion.PlayTechnique((LumiTechnique)((int)LumiTechnique.WoodRelease+village-1),village==4?1.9f:1.65f);
-            Vector3 target=game.Player.transform.position;target.y=.08f;
-            Color color=village==1?new Color(.3f,.9f,.36f):village==2?new Color(1,.73f,.25f):village==3?new Color(.7f,.87f,1):village==4?new Color(.3f,.75f,1):new Color(1,.3f,.07f);
-            GameObject warning=Circle(target,village==3?3.2f:3.7f,color,"Boss attack warning");
-            warning.transform.SetParent(transform.parent,true);Destroy(warning,2);
-            game.Audio.Play(village==4?"chakra":"wind",.7f);
-            yield return new WaitForSeconds(village==4?.85f:1.2f);
-            if(!IsAlive || !game.Player.IsAlive){Destroy(warning);casting=false;yield break;}
-            Destroy(warning);
-            if(village==1)
-            {
-                Transform forest=LumiFactory.WorldObject("Wood release • root eruption",transform.parent,target).transform;
-                Material bark=LumiFactory.Material("Hashirama living wood",new Color(.36f,.22f,.1f));
-                for(int i=0;i<12;i++)
-                {
-                    float angle=i*Mathf.PI/6;
-                    GameObject root=LumiFactory.Primitive("Emerging wood root",PrimitiveType.Capsule,forest,new Vector3(Mathf.Cos(angle)*2.5f,1.1f,Mathf.Sin(angle)*2.5f),new Vector3(.65f,1.6f,.65f),bark,false);
-                    root.transform.localRotation=Quaternion.Euler(Mathf.Sin(angle)*30,0,Mathf.Cos(angle)*30);
-                }
-                // A segmented wood dragon rises above the roots, with a readable head and horns.
-                for(int i=0;i<9;i++)LumiFactory.Primitive("Wood dragon segment",PrimitiveType.Sphere,forest,new Vector3(Mathf.Sin(i*.45f)*1.6f,1+i*.42f,Mathf.Cos(i*.45f)*1.6f),Vector3.one*(.85f-i*.025f),bark,false);
-                Vector3 head=new Vector3(Mathf.Sin(3.6f)*1.6f,4.55f,Mathf.Cos(3.6f)*1.6f);
-                LumiFactory.Primitive("Wood dragon snout",PrimitiveType.Cube,forest,head+Vector3.forward*.45f,new Vector3(.65f,.5f,1.25f),bark,false);
-                for(int side=-1;side<=1;side+=2)LumiFactory.Primitive("Dragon horn",PrimitiveType.Capsule,forest,head+new Vector3(side*.4f,.5f,0),new Vector3(.14f,.55f,.14f),bark,false);
-                forest.gameObject.AddComponent<LumiBossHazard>().Initialize(game,3.7f,3,2.4f,false);
+            bool second=SecondPhaseUnlocked && (++skillSequence%2==1);
+            casting=true;motion?.PlayTechnique(second?(LumiTechnique)((int)LumiTechnique.WoodGolem+village-1):(LumiTechnique)((int)LumiTechnique.WoodRelease+village-1),2.3f);
+            Component victim=combatTarget;Vector3 target=victim!=null?victim.transform.position:game.Player.transform.position;target.y=.08f;
+            Color color=village==1?new Color(.3f,.9f,.36f):village==2?new Color(1,.73f,.25f):village==3?new Color(.7f,.87f,1):village==4?new Color(.3f,.75f,1):second?new Color(.5f,.85f,.65f):new Color(1,.3f,.07f);
+            float range=village==3?(second?6.8f:1.8f):second?5.2f:3.5f;
+            castWarning=Circle(target,range,color,"Boss attack warning");castWarning.transform.SetParent(transform.parent,true);
+            game.Audio.Play(village==4?"chakra":"wind",.7f);yield return new WaitForSeconds(1.2f);
+            if(!IsAlive || !game.Player.IsAlive){ClearCast();casting=false;yield break;}Destroy(castWarning);
+            string key=new[]{"Hashirama","Gaara","Onoki","Raikage","Mei"}[village-1]+(second?"_Skill2":"_Skill1");
+            GameObject prefab=Resources.Load<GameObject>("LumiBosses/"+key);
+            if(prefab==null){Debug.LogError("Missing boss skill prefab "+key);casting=false;yield break;}
+            GameObject effect=Instantiate(prefab,transform.parent);effect.name=key+" active";releasedEffects.RemoveAll(item=>item==null);releasedEffects.Add(effect);effect.transform.position=target;
+            float duration=village==5?5:2.6f;effect.transform.localScale=Vector3.one*(second?2.4f:1.8f);
+            if(village==3 && second){effect.transform.localScale=new Vector3(1.1f,1.4f,4);Vector3 aim=target-transform.position;aim.y=0;if(aim.sqrMagnitude>.01f)effect.transform.rotation=Quaternion.LookRotation(aim);}
+            if(village==2 && second){Vector3 aim=target-transform.position;aim.y=0;if(aim.sqrMagnitude>.01f)effect.transform.rotation=Quaternion.LookRotation(aim);}
+            effect.AddComponent<LumiBossSkillVisual>().Initialize(game,village,second,duration);
+            if(village==4){castAura=effect;effect.transform.position=transform.position;float elapsed=0;Vector3 direction=(target-transform.position);direction.y=0;direction.Normalize();
+                effect.AddComponent<LumiBossHazard>().Initialize(game,second?2.5f:1.8f,ScaleDamage(second?6:4),1.0f,false);
+                while(elapsed<.8f && IsAlive){elapsed+=Time.deltaTime;controller.Move(direction*(second?17:13)*Time.deltaTime);effect.transform.position=transform.position;yield return null;}Destroy(effect);
+            }else{
+                var hazard=effect.AddComponent<LumiBossHazard>();hazard.Initialize(game,range,ScaleDamage(second?5:3),duration,village==3,village==5);
+                if(village==3 && second)hazard.BoxHalfExtents=new Vector2(1.87f,6.8f);
+                if(village==1)LumiChakraVisual.Burst(transform.parent,target+Vector3.up,true,second?1.8f:1);
             }
-            else if(village==2)
-            {
-                Transform wave=LumiFactory.WorldObject("Sand release • sand burial",transform.parent,target).transform;
-                Material sand=LumiFactory.Material("Gaara sand",new Color(.82f,.6f,.28f));
-                for(int i=0;i<16;i++)
-                {
-                    float angle=i*Mathf.PI/8;
-                    LumiFactory.Primitive("Curling sand wave",PrimitiveType.Sphere,wave,new Vector3(Mathf.Cos(angle)*2.7f,.7f,Mathf.Sin(angle)*2.7f),new Vector3(1.6f,2.4f,1.2f),sand,false);
-                }
-                wave.gameObject.AddComponent<LumiBossHazard>().Initialize(game,3.7f,3,2.2f,false);
-                LumiChakraVisual.Burst(transform.parent,target+Vector3.up,false,1.2f);
-            }
-            else if(village==3)
-            {
-                Transform cube=LumiFactory.WorldObject("Particle release • primitive world cube",transform.parent,target+Vector3.up*2).transform;
-                CubeEdges(cube,6.4f,color);
-                LumiFactory.Primitive("Particle release core",PrimitiveType.Sphere,cube,Vector3.zero,Vector3.one*1.4f,LumiFactory.Material("Dust release core",Color.white,true),false);
-                cube.gameObject.AddComponent<LumiBossHazard>().Initialize(game,3.2f,4,1.3f,true);
-            }
-            else if(village==4)
-            {
-                Transform aura=LumiFactory.WorldObject("Lightning chakra armour",transform,Vector3.zero).transform;
-                for(int i=0;i<8;i++)
-                {
-                    Vector3 a=new Vector3(Mathf.Cos(i*.785f)*.8f,.35f,Mathf.Sin(i*.785f)*.8f);
-                    Line(aura,new[]{a,a+new Vector3(.2f,.5f,-.18f),a+new Vector3(-.14f,1,.16f),a+Vector3.up*1.8f},color,.08f);
-                }
-                float elapsed=0;Vector3 direction=target-transform.position;direction.y=0;direction.Normalize();bool struck=false;
-                while(elapsed<.65f && IsAlive && game.Player.IsAlive)
-                {
-                    elapsed+=Time.deltaTime;controller.Move(direction*13*Time.deltaTime);
-                    if(!struck && Vector3.Distance(game.Player.transform.position,transform.position)<2){struck=true;game.Player.TakeDamage(4,game.Player.transform.position+Vector3.up);}
-                    yield return null;
-                }
-                Destroy(aura);
-            }
-            else
-            {
-                Transform lava=LumiFactory.WorldObject("Lava release • molten stream",transform.parent,target).transform;
-                Material molten=LumiFactory.Material("Mei molten lava",new Color(1,.2f,.015f),true);
-                LumiFactory.Primitive("Molten pool",PrimitiveType.Cylinder,lava,Vector3.up*.035f,new Vector3(7,.045f,7),molten,false);
-                for(int i=0;i<9;i++)
-                {
-                    float t=i/8f;Vector3 p=Vector3.Lerp(AimPoint,target+Vector3.up*.3f,t)+Vector3.up*Mathf.Sin(t*Mathf.PI)*1.5f;
-                    LumiFactory.Primitive("Lava jet",PrimitiveType.Sphere,lava,p-target,Vector3.one*(.3f+t*.55f),molten,false);
-                }
-                lava.gameObject.AddComponent<LumiBossHazard>().Initialize(game,3.5f,2,4.5f,false,true);
-            }
-            yield return new WaitForSeconds(.4f);casting=false;
+            yield return new WaitForSeconds(village==4?.4f:1.1f);casting=false;
         }
         public static GameObject Circle(Vector3 point,float radius,Color color,string name)
         {
             Transform root=new GameObject(name).transform;root.position=point;
             Vector3[] points=new Vector3[65];for(int i=0;i<65;i++){float a=i*Mathf.PI/32;points[i]=new Vector3(Mathf.Cos(a)*radius,.035f,Mathf.Sin(a)*radius);}
             Line(root,points,color,.12f);return root.gameObject;
-        }
-        private static void CubeEdges(Transform root,float size,Color color)
-        {
-            for(int axis=0;axis<3;axis++)for(int a=-1;a<=1;a+=2)for(int b=-1;b<=1;b+=2)
-            {
-                Vector3 start=new Vector3(a,b,-1)*size*.5f,end=new Vector3(a,b,1)*size*.5f;
-                if(axis==1){start=new Vector3(start.z,start.x,start.y);end=new Vector3(end.z,end.x,end.y);}
-                if(axis==2){start=new Vector3(start.y,start.z,start.x);end=new Vector3(end.y,end.z,end.x);}
-                Line(root,new[]{start,end},color,.1f);
-            }
         }
         private static void Line(Transform parent,Vector3[] points,Color color,float width)
         {
@@ -147,22 +107,27 @@ namespace LumiAdventure
         }
         public void TakeDamage(int amount,Vector3 point)
         {
-            if(!IsAlive || !game.IsPlaying)return;health=Mathf.Max(0,health-amount);engaged=true;flash.Flash(Color.red);game.Audio.Play("hit",.6f);game.SpawnImpact(point,new Color(1,.7f,.25f));
-            if(health==0){StopAllCoroutines();controller.enabled=false;game.BossDefeated(this);LumiChakraVisual.Burst(transform.parent,AimPoint,true,2);Destroy(gameObject,.5f);}
+            if(!IsAlive || !game.IsPlaying)return;health=Mathf.Max(0,health-amount);engaged=true;
+            if(health>0 && HealthFraction<.5f && !SecondPhaseUnlocked){SecondPhaseUnlocked=true;game.ShowToast(BossName+" — GIAI ĐOẠN 2",new Color(1,.35f,.15f));nextSkill=Mathf.Min(nextSkill,Time.time+1);}
+            flash.Flash(Color.red);game.Audio.Play("hit",.6f);game.SpawnImpact(point,new Color(1,.7f,.25f));
+            if(health==0){StopAllCoroutines();ClearCast();foreach(var effect in releasedEffects)if(effect!=null)Destroy(effect);controller.enabled=false;game.BossDefeated(this);LumiChakraVisual.Burst(transform.parent,AimPoint,true,2);Destroy(gameObject,.5f);}
         }
     }
     public sealed class LumiBossHazard:MonoBehaviour
     {
-        private LumiGame game;private float radius,life,nextHit;private int damage;private bool cube,repeat;private Vector3 scale;
-        public void Initialize(LumiGame owner,float range,int hitDamage,float duration,bool box,bool repeated=false){game=owner;radius=range;damage=hitDamage;life=duration;cube=box;repeat=repeated;scale=transform.localScale;transform.localScale=scale*.1f;}
+        private readonly System.Collections.Generic.Dictionary<LumiShadowClone,float> cloneHits=new System.Collections.Generic.Dictionary<LumiShadowClone,float>();
+        public Vector2 BoxHalfExtents;
+        private LumiGame game;private float radius,life,nextHit,activeAt;private int damage;private bool cube,repeat;private Vector3 scale;
+        public void Initialize(LumiGame owner,float range,int hitDamage,float duration,bool box,bool repeated=false){game=owner;radius=range;damage=hitDamage;life=duration;activeAt=Time.time+.15f;cube=box;BoxHalfExtents=new Vector2(range,range);repeat=repeated;scale=transform.localScale;transform.localScale=scale*.1f;}
         private void Update()
         {
             if(game==null){Destroy(gameObject);return;}if(!game.IsPlaying)return;
             transform.localScale=Vector3.Lerp(transform.localScale,scale,Time.deltaTime*12);life-=Time.deltaTime;
             if(life<=0){Destroy(gameObject);return;}
-            Vector3 d=game.Player.transform.position-transform.position;bool inside=cube?Mathf.Abs(d.x)<radius && Mathf.Abs(d.z)<radius:new Vector2(d.x,d.z).magnitude<radius;
+            if(Time.time<activeAt)return;
+            Vector3 d=Quaternion.Inverse(transform.rotation)*(game.Player.transform.position-transform.position);bool inside=cube?Mathf.Abs(d.x)<BoxHalfExtents.x && Mathf.Abs(d.z)<BoxHalfExtents.y:new Vector2(d.x,d.z).magnitude<radius;
             if(inside && Time.time>=nextHit){game.Player.TakeDamage(damage,game.Player.transform.position+Vector3.up);nextHit=Time.time+(repeat?1:100);}
-            foreach(LumiShadowClone clone in LumiShadowClone.Active.ToArray())if(clone!=null && Vector3.Distance(clone.transform.position,transform.position)<radius+2)clone.TakeDamage(damage,clone.transform.position);
+            foreach(LumiShadowClone clone in LumiShadowClone.Active.ToArray()){if(clone==null || !clone.IsAlive)continue;Vector3 c=Quaternion.Inverse(transform.rotation)*(clone.transform.position-transform.position);bool inZone=cube?Mathf.Abs(c.x)<BoxHalfExtents.x && Mathf.Abs(c.z)<BoxHalfExtents.y:new Vector2(c.x,c.z).magnitude<radius;if(inZone && (!cloneHits.TryGetValue(clone,out float next) || Time.time>=next)){clone.TakeDamage(damage,clone.AimPoint);cloneHits[clone]=Time.time+(repeat?1:100);}}
         }
     }
 }

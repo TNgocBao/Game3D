@@ -133,7 +133,7 @@ namespace LumiAdventure
             {
                 Vector3 preferred=RoutePoint(config.Route,Random.Range(.18f,.92f))+Vector3.right*Random.Range(-8f,8f);
                 if (!TryFindOpenPosition(config, 14f, out Vector3 position,preferred)) continue;
-                var enemyObject = new GameObject(type.ToString(), typeof(CharacterController));
+                var enemyObject = new GameObject(LumiBeastArt.NameFor(type), typeof(CharacterController));
                 enemyObject.transform.SetParent(worldRoot, false);
                 enemyObject.transform.position = position;
                 enemyObject.AddComponent<LumiEnemy>().Initialize(this, Player, type, config.Intelligence);
@@ -224,14 +224,6 @@ namespace LumiAdventure
             block.transform.position = position;
             if (rotation != default(Quaternion)) block.transform.rotation = rotation;
             return block;
-        }
-
-        private void CreateTree(Vector3 position, Material trunk, Material leaves)
-        {
-            LumiFactory.Primitive("Thân cây", PrimitiveType.Cylinder, worldRoot, position + Vector3.up * 1.5f,
-                new Vector3(0.7f, 1.5f, 0.7f), trunk, true);
-            LumiFactory.Primitive("Tán cây", PrimitiveType.Sphere, worldRoot, position + Vector3.up * 3.5f,
-                new Vector3(2.5f, 2.1f, 2.5f), leaves, false);
         }
 
         private void CreatePillar(Vector3 position, Material body, Material accent, float height)

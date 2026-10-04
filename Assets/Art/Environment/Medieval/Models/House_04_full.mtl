@@ -1,0 +1,5 @@
+newmtl House_04_full_0
+Kd 1.0 1.0 1.0
+Ks 0 0 0
+d 1
+map_Kd House_04_full_0.png

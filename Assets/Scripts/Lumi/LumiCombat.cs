@@ -113,11 +113,11 @@ namespace LumiAdventure
 
         private void Release(){if(Pool!=null)Pool.Return(this);else Destroy(gameObject);}
 
-        public bool Trace(Vector3 origin,Vector3 aim,float distance,out RaycastHit closest)
+        public bool Trace(Vector3 origin,Vector3 aim,float distance,out RaycastHit closest,float radius=.13f)
         {
-            int count=Physics.SphereCastNonAlloc(origin,.13f,aim,traceHits,distance,~0,QueryTriggerInteraction.Ignore);
+            int count=Physics.SphereCastNonAlloc(origin,radius,aim,traceHits,distance,~0,QueryTriggerInteraction.Ignore);
             RaycastHit[] hits=traceHits;
-            if(count==traceHits.Length){hits=Physics.SphereCastAll(origin,.13f,aim,distance,~0,QueryTriggerInteraction.Ignore);count=hits.Length;}
+            if(count==traceHits.Length){hits=Physics.SphereCastAll(origin,radius,aim,distance,~0,QueryTriggerInteraction.Ignore);count=hits.Length;}
             closest=default;float nearest=float.PositiveInfinity;
             for(int i=0;i<count;i++)
             {

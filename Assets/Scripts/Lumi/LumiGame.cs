@@ -47,6 +47,7 @@ namespace LumiAdventure
         public LumiAudio Audio { get; private set; }
         public LumiPlayer Player { get; private set; }
         public LumiCameraRig CameraRig { get; private set; }
+        public int CurrentLevel=>currentLevel;
         public bool IsPlaying => state == GameState.Playing;
 
         private void Awake()
@@ -54,8 +55,10 @@ namespace LumiAdventure
             DisableOriginalScene();
             Time.timeScale = 1f;
             Application.targetFrameRate = 60;
-            QualitySettings.antiAliasing = 4;
-            QualitySettings.shadowDistance = 75f;
+            QualitySettings.antiAliasing = 2;
+            QualitySettings.shadowDistance = 45f;
+            QualitySettings.shadowResolution = ShadowResolution.Medium;
+            QualitySettings.shadowCascades = 2;
             Audio = gameObject.AddComponent<LumiAudio>();
             Audio.Initialize();
             BuildInterface();
@@ -107,6 +110,14 @@ namespace LumiAdventure
         }
 
         public void StartLevel(int level)
+        {
+            if(!LumiProgressionRules.CanStartLevel(PlayerPrefs.GetInt("Lumi.Unlocked",1),level)){ShowToast("Hoàn thành màn trước để mở màn này!",new Color(1,.7f,.2f));return;}
+            StartLevelInternal(level);
+        }
+#if UNITY_EDITOR
+        public void StartLevelForValidation(int level){StartLevelInternal(level);}
+#endif
+        private void StartLevelInternal(int level)
         {
             CloseDialogue();
             Time.timeScale = 1f;
@@ -220,9 +231,7 @@ namespace LumiAdventure
             starText.text = "★ " + collectedStars + "/" + totalStars + "   ·   " + score;
             healthSlider.value = Player.Health / (float)LumiPlayer.MaxHealth;
             armorSlider.value = Player.Armor / (float)LumiPlayer.MaxArmor;
-            var buffs = new List<string>();
-            if (Player.IsInvisible) buffs.Add("TÀNG HÌNH");
-            buffText.text = string.Join("   ", buffs.ToArray());
+            buffText.text = Player.IsInvisible ? "TÀNG HÌNH" : string.Empty;
         }
 
         public void SetDirectionArrow(bool visible)
@@ -569,6 +578,7 @@ namespace LumiAdventure
         }
     }
 }
+
 
 
 

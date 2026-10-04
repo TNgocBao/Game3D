@@ -1,0 +1,86 @@
+[
+  {
+    "pack": "Styloo",
+    "name": "tree_001",
+    "vertices": 154,
+    "triangles": 106,
+    "normalized_size": [
+      0.6652038586691679,
+      1.0,
+      0.6587026050208811
+    ],
+    "materials": 1
+  },
+  {
+    "pack": "Styloo",
+    "name": "house2",
+    "vertices": 592,
+    "triangles": 686,
+    "normalized_size": [
+      1.07056280892905,
+      1.0,
+      0.7958737313127787
+    ],
+    "materials": 3
+  },
+  {
+    "pack": "Styloo",
+    "name": "house3",
+    "vertices": 2637,
+    "triangles": 1851,
+    "normalized_size": [
+      1.5954854868331434,
+      1.0,
+      1.0087587222579155
+    ],
+    "materials": 4
+  },
+  {
+    "pack": "Styloo",
+    "name": "house4",
+    "vertices": 1265,
+    "triangles": 1090,
+    "normalized_size": [
+      1.1083917768049651,
+      1.0,
+      1.2603152013338066
+    ],
+    "materials": 5
+  },
+  {
+    "pack": "Styloo",
+    "name": "house6",
+    "vertices": 2840,
+    "triangles": 1794,
+    "normalized_size": [
+      1.2077405761281306,
+      1.0,
+      0.7784675106265744
+    ],
+    "materials": 13
+  },
+  {
+    "pack": "Medieval",
+    "name": "House_01_full",
+    "vertices": 46593,
+    "triangles": 15531,
+    "normalized_size": [
+      1.1745536877809053,
+      1.0,
+      0.9313584195946908
+    ],
+    "materials": 1
+  },
+  {
+    "pack": "Medieval",
+    "name": "House_04_full",
+    "vertices": 33360,
+    "triangles": 11120,
+    "normalized_size": [
+      0.6984996893161589,
+      1.0,
+      1.6487607897891794
+    ],
+    "materials": 1
+  }
+]

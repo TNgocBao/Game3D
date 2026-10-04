@@ -29,6 +29,9 @@ internal static class GameRulesChecks
             Check(LumiProgressionRules.UnlockedAfterResult(level,level,true)==Math.Min(5,level+1),"win unlocks next level");
             Check(LumiProgressionRules.UnlockedAfterResult(5,level,true)==5,"replay preserves later unlocks");
         }
+        Check(!LumiProgressionRules.CanStartLevel(1,2),"locked map cannot start");
+        Check(LumiProgressionRules.CanStartLevel(1,1),"first map starts");
+        Check(LumiProgressionRules.UnlockedAfterResult(1,4,true)==1,"cannot unlock by skipping maps");
         Check(LumiProgressionRules.UnlockedAfterResult(0,1,false)==1,"damaged save lower bound");
         Check(LumiProgressionRules.UnlockedAfterResult(99,5,false)==5,"damaged save upper bound");
         var gate=new LumiShotGate();

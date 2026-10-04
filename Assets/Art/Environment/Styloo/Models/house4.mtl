@@ -1,0 +1,25 @@
+newmtl house4_0
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house4_0.png
+newmtl house4_1
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house4_1.png
+newmtl house4_2
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house4_2.png
+newmtl house4_3
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house4_3.png
+newmtl house4_4
+Kd 0.7 0.7 0.7
+Ks 0 0 0
+d 1
+map_Kd house4_4.png

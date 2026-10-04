@@ -1,2 +1,0 @@
-from pathlib import Path
-p=Path('ArtSource/NarutoStarter/build_starter.py');s=p.read_text(encoding='utf-8-sig');s=s.replace("bpy.ops.mesh.normals_make_consistent(inside=False);bpy.ops.object.mode_set(mode='OBJECT')","bpy.ops.mesh.normals_make_consistent(inside=False);bpy.ops.mesh.dissolve_limited(angle_limit=.001);bpy.ops.object.mode_set(mode='OBJECT')");s=s.replace("mod.width=.003;mod.segments=3","mod.width=.016 if spec['name'].startswith(('Jacket','Headband')) else .004;mod.segments=4");p.write_text(s,encoding='utf-8')

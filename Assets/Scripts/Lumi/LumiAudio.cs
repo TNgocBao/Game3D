@@ -43,6 +43,7 @@ namespace LumiAdventure
             clips["shoot"] = Tone("shoot", 720f, 0.08f, 0.35f, true);
             clips["chakra"]=Chime("chakra",new[]{280f,420f,620f,880f},.45f);
             clips["wind"]=Tone("wind",160f,.6f,.2f,true);
+            clips["chakraExplosion"]=ChakraExplosion();
             clips["clone"]=Tone("clone",95f,.22f,.4f,true);
             clips["hit"] = Tone("hit", 180f, 0.12f, 0.5f, false);
             clips["hurt"] = Tone("hurt", 105f, 0.2f, 0.6f, false);
@@ -113,6 +114,20 @@ namespace LumiAdventure
             var clip = AudioClip.Create(name, count, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
+        }
+        private static AudioClip ChakraExplosion()
+        {
+            const int sampleRate=22050;var data=new float[sampleRate];uint noise=7319;float filtered=0;
+            for(int i=0;i<data.Length;i++)
+            {
+                float t=i/(float)sampleRate;noise=1664525*noise+1013904223;
+                float white=((noise>>8)/(float)0xFFFFFF)*2-1;filtered=Mathf.Lerp(filtered,white,.14f);
+                float envelope=Mathf.Min(1,t*70)*Mathf.Exp(-t*4);
+                float rumble=Mathf.Sin(2*Mathf.PI*(62*t-18*t*t))*.26f;
+                float vortex=white*.13f*(.65f+.35f*Mathf.Sin(t*95));
+                data[i]=(filtered*.55f+rumble+vortex)*envelope;
+            }
+            AudioClip clip=AudioClip.Create("Chakra vortex explosion",data.Length,1,sampleRate,false);clip.SetData(data,0);return clip;
         }
 
         private static AudioClip Chime(string name, float[] frequencies, float duration)

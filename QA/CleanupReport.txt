@@ -1,8 +1,5 @@
-Cleanup completed 2026-10-03.
-About 808 MiB removed from the project into Windows Recycle Bin.
-Assets directory after cleanup: 269 files, 109399040 bytes (104.33 MiB).
-Removed: HelloMarioAssets, old scenes/controllers/scripts/media, unused Kenney packs, obsolete Naruto resources, unused Nunito fonts, duplicate references, old downloaded models, Blender backup and temporary refinement scripts, duplicate Unity review project.
-Kept: active Naruto mesh/materials/FBX, Blender source and tool environment, current village art/music/fonts, original user references, active gameplay code, Unity project settings and package definitions.
-Validation: no retained serialized asset references any removed asset GUID; all current runtime/editor C# compiled successfully.
+Cleanup completed 2026-10-04.
+This pass recoverably recycled about 926 MiB of obsolete Naruto prototypes, duplicate review copies, old model-builder experiments, and the no-longer-needed Blender environment. The previous cleanup recoverably recycled about 808 MiB. Total: about 1.7 GiB in Windows Recycle Bin, available for restore.
+Preserved the newly supplied naruto-shippuden source folder, the active Shippuden FBX and five texture maps, its Unity prefab/materials, gameplay/UI/audio assets, village and Bijuu references, Unity project settings, and required packages.
+Validation: Shippuden model import and rig review passed in an isolated Unity 2021.3.13f1 project. Main project prefab references the imported rig and its materials/textures. No permanent deletion was performed.
 Unity Library/Temp caches and Git history retained.
-Permanent bulk deletion was blocked by automatic policy review; recoverable recycling succeeded.

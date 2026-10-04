@@ -10,7 +10,6 @@ namespace LumiAdventure
             Material plaster=LumiFactory.Material("Village plaster"+level,level==2?new Color(.82f,.65f,.4f):level==3?new Color(.52f,.49f,.43f):level==5?new Color(.39f,.49f,.52f):new Color(.88f,.83f,.69f));
             Material roof=LumiFactory.Material("Village roof"+level,level==5?new Color(.16f,.26f,.3f):level==2?new Color(.73f,.48f,.23f):new Color(.65f,.23f,.14f));
             Material timber=LumiFactory.Material("Village timber",new Color(.28f,.19f,.12f));
-            Material foliage=LumiFactory.Material("Leaf village foliage",new Color(.18f,.42f,.23f));
             Material stone=LumiFactory.Material("Village cliffs"+level,Color.Lerp(config.Wall,Color.gray,.35f));
             Material path=LumiFactory.Material("Village avenue"+level,level==2?new Color(.85f,.69f,.46f):new Color(.59f,.55f,.44f));
             Trail(config.Route,path,9);
@@ -21,7 +20,7 @@ namespace LumiAdventure
                 {
                     Vector3 p=center+new Vector3(side*(15+column*15),0,Random.Range(-3f,3f));
                     if(Mathf.Abs(p.x)>config.Width*.5f-8 || RouteDistance(p,config.Route)<10 || Vector3.Distance(p,config.Route[config.Route.Length-1])<15)continue;
-                    VillageHouse(p,level,plaster,roof,timber,Random.Range(4.8f,7f),Random.Range(4f,7f));
+                    VillageHouse(p,level,Random.Range(4.8f,7f),Random.Range(4f,7f));
                 }
                 Vector3 lantern=center+Vector3.right*side*6.3f;
                 Scenery("Stone lantern base",lantern+Vector3.up*.3f,new Vector3(.85f,.6f,.85f),stone);
@@ -31,7 +30,7 @@ namespace LumiAdventure
             for(int side=-1;side<=1;side+=2)for(float z=-config.Depth*.5f+5;z<config.Depth*.5f;z+=7)
             {
                 Vector3 p=P(side*(config.Width*.5f-3),z);
-                if(level==1)ArenaPine(p,timber,foliage,Random.Range(5f,8f));
+                if(level==1)ImportedTree(p,Random.Range(5f,8f));
                 else ArenaRock(p,stone,Random.Range(4f,7f));
             }
             Vector3 end=config.Route[config.Route.Length-1];
@@ -49,17 +48,17 @@ namespace LumiAdventure
                     Scenery("Hokage brow",p+new Vector3(0,9,-1.4f),new Vector3(3,.45f,.4f),stone);
                     Scenery("Hokage nose",p+new Vector3(0,7.7f,-1.7f),new Vector3(.6f,1.3f,.8f),plaster);
                 }
-                for(int i=0;i<40;i++){Vector3 p=P(Random.Range(-40,40),Random.Range(-60,60));if(RouteDistance(p,config.Route)>12)ArenaPine(p,timber,foliage,Random.Range(3f,5f));}
+                for(int i=0;i<40;i++){Vector3 p=P(Random.Range(-40,40),Random.Range(-60,60));if(RouteDistance(p,config.Route)>12)ImportedTree(p,Random.Range(3f,5f));}
             }
             if(level==2)
             {
-                VillageHouse(P(-33,38),level,plaster,roof,timber,14,18);
+                VillageHouse(P(-33,38),level,14,18);
                 for(int i=0;i<15;i++)ArenaRock(P(Random.Range(-45,45),config.Depth*.5f+7),stone,Random.Range(8f,14f));
             }
             if(level==3)
             {
                 for(int i=0;i<14;i++)ArenaRock(P((i%2==0?-1:1)*42,-60+i*9),stone,Random.Range(7f,12f));
-                VillageHouse(P(-33,40),level,plaster,roof,timber,12,15);
+                VillageHouse(P(-33,40),level,12,15);
             }
             if(level==4)
             {
@@ -67,7 +66,7 @@ namespace LumiAdventure
                 {
                     Vector3 p=P((i%2==0?-1:1)*37,-58+i*18);
                     LumiFactory.Primitive("Cloud mountain pillar",PrimitiveType.Cylinder,worldRoot,p+Vector3.up*7,new Vector3(12,7,12),stone,true);
-                    VillageHouse(p+Vector3.up*14,level,plaster,roof,timber,9,7);
+                    VillageHouse(p+Vector3.up*14,level,9,7);
                 }
                 Material cloud=LumiFactory.Material("Distant cloud banks",new Color(.92f,.97f,1,.65f),false,true);
                 for(int i=0;i<18;i++)LumiFactory.Primitive("Mountain cloud",PrimitiveType.Sphere,worldRoot,P((i%2==0?-1:1)*58,-75+i*9)+Vector3.up*8,new Vector3(20,3,9),cloud,false);
@@ -85,23 +84,9 @@ namespace LumiAdventure
             }
             Random.state=saved;
         }
-        private void VillageHouse(Vector3 p,int level,Material wall,Material roof,Material wood,float width,float height)
+        private void VillageHouse(Vector3 p,int level,float width,float height)
         {
-            Transform house=LumiFactory.WorldObject("Village house "+level,worldRoot,p).transform;
-            bool round=level==2 || level==4;
-            LumiFactory.Primitive("House body",round?PrimitiveType.Cylinder:PrimitiveType.Cube,house,Vector3.up*height*.5f,new Vector3(width,round?height*.5f:height,width*.85f),wall,true);
-            if(round)LumiFactory.Primitive("Domed roof",PrimitiveType.Sphere,house,Vector3.up*height,new Vector3(width*1.08f,level==2?width*.55f:1.1f,width*.92f),roof,false);
-            else for(int side=-1;side<=1;side+=2)
-                LumiFactory.Primitive("Sloped tile roof",PrimitiveType.Cube,house,new Vector3(side*width*.26f,height+.65f,0),new Vector3(width*.65f,.3f,width*1.02f),roof,false).transform.localRotation=Quaternion.Euler(0,0,side*-24);
-            LumiFactory.Primitive("Entrance",PrimitiveType.Cube,house,new Vector3(0,1.2f,width*.43f),new Vector3(1.3f,2.4f,.12f),wood,false);
-            Material glass=LumiFactory.Material("Warm village windows",new Color(.95f,.75f,.39f),true);
-            for(int side=-1;side<=1;side+=2)
-            {
-                LumiFactory.Primitive("Window frame",PrimitiveType.Cube,house,new Vector3(side*width*.28f,height*.58f,width*.44f),new Vector3(1.35f,1.5f,.2f),wood,false);
-                LumiFactory.Primitive("Window light",PrimitiveType.Cube,house,new Vector3(side*width*.28f,height*.58f,width*.46f),new Vector3(1.05f,1.18f,.1f),glass,false);
-                LumiFactory.Primitive("Window mullion",PrimitiveType.Cube,house,new Vector3(side*width*.28f,height*.58f,width*.475f),new Vector3(.09f,1.2f,.08f),wood,false);
-            }
-            if(level==5)for(int side=-1;side<=1;side+=2)LumiFactory.Primitive("Timber frame",PrimitiveType.Cube,house,new Vector3(side*width*.45f,height*.5f,width*.44f),new Vector3(.2f,height,.2f),wood,false);
+            LumiEnvironmentAssets.House(worldRoot,p,level,width,height);
         }
         private void VillageGate(Vector3 p,Material roof,Material wood)
         {

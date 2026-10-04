@@ -4,6 +4,7 @@ namespace LumiAdventure
 {
     public static class LumiProgressionRules
     {
+        public static bool CanStartLevel(int unlocked,int level)=>level>=1 && level<=5 && level<=Math.Max(1,Math.Min(5,unlocked));
         public static int Rating(bool completed,int collected,int required)
         {
             if(!completed)return 0;
@@ -18,6 +19,7 @@ namespace LumiAdventure
             unlocked=Math.Max(1,Math.Min(5,unlocked));
             if(!completed)return unlocked;
             if(level<1 || level>5)throw new ArgumentOutOfRangeException(nameof(level));
+            if(level>unlocked)return unlocked;
             return Math.Max(unlocked,Math.Min(5,level+1));
         }
     }

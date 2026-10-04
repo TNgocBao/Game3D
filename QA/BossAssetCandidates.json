@@ -1,0 +1,109 @@
+[
+  {
+    "uid": "d7333b0f20394170a03bc3b0c4f2f0ec",
+    "name": "Hashirama",
+    "viewerUrl": "https://sketchfab.com/3d-models/hashirama-d7333b0f20394170a03bc3b0c4f2f0ec",
+    "isDownloadable": true,
+    "animationCount": 0,
+    "vertexCount": 1101,
+    "faceCount": 2142,
+    "description": "Hashirama",
+    "license": {
+      "uri": "https://api.sketchfab.com/v3/licenses/72eb2b1960364637901eacce19283624",
+      "label": "Free Standard",
+      "fullName": "Free Standard",
+      "requirements": "Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works",
+      "url": "https://sketchfab.com/licenses",
+      "slug": "free-st"
+    },
+    "creator": "Tigerar1"
+  },
+  {
+    "uid": "6ad22c0aa9054e0db9d64b5006f77d96",
+    "name": "Hashirama (Hokage Clothes)",
+    "viewerUrl": "https://sketchfab.com/3d-models/hashirama-hokage-clothes-6ad22c0aa9054e0db9d64b5006f77d96",
+    "isDownloadable": true,
+    "animationCount": 0,
+    "vertexCount": 8590,
+    "faceCount": 16471,
+    "description": "",
+    "license": {
+      "uri": "https://api.sketchfab.com/v3/licenses/bbfe3f7dbcdd4122b966b85b9786a989",
+      "label": "CC Attribution-NonCommercial",
+      "fullName": "Creative Commons Attribution-NonCommercial",
+      "requirements": "Author must be credited. No commercial use.",
+      "url": "http://creativecommons.org/licenses/by-nc/4.0/",
+      "slug": "by-nc"
+    },
+    "creator": "LorisC93"
+  },
+  {
+    "uid": "9ac6383b51de42e1998b5f5cfbc11f32",
+    "name": "Hashirama Justus",
+    "viewerUrl": "https://sketchfab.com/3d-models/hashirama-justus-9ac6383b51de42e1998b5f5cfbc11f32",
+    "isDownloadable": true,
+    "animationCount": 0,
+    "vertexCount": 6604,
+    "faceCount": 12884,
+    "description": "",
+    "license": {
+      "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+      "label": "CC Attribution",
+      "fullName": "Creative Commons Attribution",
+      "requirements": "Author must be credited. Commercial use is allowed.",
+      "url": "http://creativecommons.org/licenses/by/4.0/",
+      "slug": "by"
+    },
+    "creator": "LorisC93"
+  },
+  {
+    "uid": "61dfef60317b46f8b68a352a3affe906",
+    "name": "GAARA SAND STREAM JUTSU",
+    "viewerUrl": "https://sketchfab.com/3d-models/gaara-sand-stream-jutsu-61dfef60317b46f8b68a352a3affe906",
+    "isDownloadable": true,
+    "animationCount": 1,
+    "vertexCount": 4327,
+    "faceCount": 8514,
+    "description": "only glitch is in his sand barrel thingy...\n\n\nmain channel:\nhttps://www.youtube.com/c/strykerdoesgames\n\n2nd channel:\nhttps://www.youtube.com/channel/UCGui4xTA6epY6Kf2ybz1Qg\n\ntwitter:\nhttps://twitter.com/StrykerDawson\n\nthe squad:\nhttps://www.youtube.com/channel/UCzuDjBixyR0iFHU29_U1eHQ/channels\n\nmy website:\nhttp://strykzone.weebly.com/\n\nfanpage on facebook:\nhttps://www.facebook.com/strykerdoesgames\n\nmerchandise:\nhttp://shop.spreadshirt.com/StrykerDGYTshop\n\n3d designs by me:\nhttps://sketchfab.com/strykerdoesgames\n\nmy other 3d design site:\nhttps://clara.io/user/strykerdoesanimation\n\nmy other site:\nhttp://strykzone.weebly.com/\n\nSOUNDCLOUD\nhttps://soundcloud.com/user-976136092\n\nMY PATREON\nhttps://www.patreon.com/StrykerDawsonTV",
+    "license": {
+      "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+      "label": "CC Attribution",
+      "fullName": "Creative Commons Attribution",
+      "requirements": "Author must be credited. Commercial use is allowed.",
+      "url": "http://creativecommons.org/licenses/by/4.0/",
+      "slug": "by"
+    },
+    "creator": "StrykerDoesAnimation"
+  },
+  {
+    "uid": "ddf17859e3d143a787d4b5346cce3aaf",
+    "name": "Gaara",
+    "viewerUrl": "https://sketchfab.com/3d-models/gaara-ddf17859e3d143a787d4b5346cce3aaf",
+    "isDownloadable": true,
+    "animationCount": 0,
+    "vertexCount": 9623,
+    "faceCount": 18672,
+    "description": "",
+    "license": {
+      "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+      "label": "CC Attribution",
+      "fullName": "Creative Commons Attribution",
+      "requirements": "Author must be credited. Commercial use is allowed.",
+      "url": "http://creativecommons.org/licenses/by/4.0/",
+      "slug": "by"
+    },
+    "creator": "serienreviewer"
+  },
+  {
+    "uid": "541b1cce9975498e8615f092c2405397",
+    "name": "ay raikage - Naruto",
+    "viewerUrl": "https://sketchfab.com/3d-models/ay-raikage-naruto-541b1cce9975498e8615f092c2405397",
+    "isDownloadable": false,
+    "animationCount": 0,
+    "vertexCount": 578757,
+    "faceCount": 1154494,
+    "description": "ay from naruto",
+    "license": {},
+    "creator": "RickelmeSC"
+  }
+]

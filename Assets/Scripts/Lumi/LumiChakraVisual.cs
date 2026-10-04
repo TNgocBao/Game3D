@@ -4,7 +4,7 @@ namespace LumiAdventure
 {
     public static class LumiChakraVisual
     {
-        private static Material chakra,lineMaterial;
+        private static Material chakra,lineMaterial,particleMaterial;
         private static Mesh blade;
         public static GameObject Orb(Transform parent,bool shuriken,float radius)
         {
@@ -13,12 +13,12 @@ namespace LumiAdventure
             GameObject root=LumiFactory.WorldObject(shuriken?"Wind Rasenshuriken":"Rasengan vortex",parent,Vector3.zero);
             LumiFactory.Primitive("Chakra sphere",PrimitiveType.Sphere,root.transform,Vector3.zero,Vector3.one*radius*2,chakra,false);
             LumiFactory.Primitive("White chakra core",PrimitiveType.Sphere,root.transform,Vector3.zero,Vector3.one*radius*.65f,LumiFactory.Material("Chakra core",new Color(.7f,.95f,1),true),false);
-            for(int j=0;j<4;j++)
+            for(int j=0;j<7;j++)
             {
                 GameObject ribbon=new GameObject("Spiral chakra ribbon");ribbon.transform.SetParent(root.transform,false);
                 ribbon.transform.localRotation=Quaternion.Euler(j*43,j*57,j*31);
                 LineRenderer line=ribbon.AddComponent<LineRenderer>();line.useWorldSpace=false;line.loop=false;line.positionCount=65;line.sharedMaterial=lineMaterial;
-                line.startWidth=line.endWidth=radius*.038f;line.startColor=new Color(.3f,.8f,1,.2f);line.endColor=new Color(.85f,1,1,.85f);
+                line.startWidth=line.endWidth=radius*.045f;line.startColor=new Color(.3f,.8f,1,.35f);line.endColor=new Color(.85f,1,1,.85f);
                 for(int i=0;i<65;i++){float t=i/64f,angle=t*Mathf.PI*4.5f+j;float y=(t-.5f)*1.75f;float r=Mathf.Sqrt(Mathf.Max(.05f,1-y*y));line.SetPosition(i,new Vector3(Mathf.Cos(angle)*r,y,Mathf.Sin(angle)*r)*radius*1.08f);}
                 line.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
             }
@@ -37,7 +37,42 @@ namespace LumiAdventure
                     wing.GetComponent<MeshFilter>().sharedMesh=blade;wing.GetComponent<MeshRenderer>().sharedMaterial=LumiFactory.Material("Wind blades",new Color(.5f,.9f,1,.65f),true,true);
                 }
             }
-            root.AddComponent<LumiChakraSpin>();return root;
+            root.AddComponent<LumiChakraSpin>().IsShuriken=shuriken;return root;
+        }
+        public static GameObject Vortex(Transform parent,float radius)
+        {
+            GameObject root=Orb(parent,false,1);root.name="Dense expanding chakra sphere";
+            // Retain the hollow, swirling shell so targets remain readable inside the blast.
+            Transform core=root.transform.Find("White chakra core");if(core!=null)core.localScale=Vector3.one*.22f;
+            Renderer shell=root.transform.Find("Chakra sphere").GetComponent<Renderer>();var tint=new MaterialPropertyBlock();
+            tint.SetFloat("_Density",.7f);tint.SetFloat("_Energy",1.15f);shell.SetPropertyBlock(tint);
+            for(int ring=0;ring<5;ring++)
+            {
+                var obj=new GameObject("Wind shockwave ring "+ring);obj.transform.SetParent(root.transform,false);obj.transform.localRotation=Quaternion.Euler(ring*31,ring*43,ring*17);
+                LineRenderer line=obj.AddComponent<LineRenderer>();line.sharedMaterial=lineMaterial;line.useWorldSpace=false;line.loop=true;line.positionCount=96;
+                line.widthMultiplier=.026f;line.startColor=line.endColor=new Color(.65f,.94f,1,.62f);
+                for(int i=0;i<96;i++){float angle=i*Mathf.PI*2/96;line.SetPosition(i,new Vector3(Mathf.Cos(angle),.06f*Mathf.Sin(angle*8),Mathf.Sin(angle))*1.035f);}
+                line.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            root.transform.localScale=Vector3.one*radius;return root;
+        }
+        public static ParticleSystem WindParticles(Transform parent,float radius)
+        {
+            if(particleMaterial==null)
+            {
+                particleMaterial=new Material(Shader.Find("Sprites/Default")){name="Soft chakra motes"};
+                var texture=new Texture2D(32,32,TextureFormat.RGBA32,false);var pixels=new Color[1024];
+                for(int y=0;y<32;y++)for(int x=0;x<32;x++){float d=Vector2.Distance(new Vector2(x,y),new Vector2(15.5f,15.5f))/15.5f;pixels[y*32+x]=new Color(1,1,1,Mathf.Pow(Mathf.Clamp01(1-d),2));}
+                texture.SetPixels(pixels);texture.Apply();particleMaterial.mainTexture=texture;
+            }
+            GameObject obj=new GameObject("Chakra wind debris");obj.transform.SetParent(parent,false);ParticleSystem ps=obj.AddComponent<ParticleSystem>();ps.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main=ps.main;main.loop=false;main.duration=1.4f;main.startLifetime=new ParticleSystem.MinMaxCurve(.45f,.85f);main.startSpeed=radius*2.6f;main.startSize=new ParticleSystem.MinMaxCurve(.08f,.18f);main.maxParticles=180;main.simulationSpace=ParticleSystemSimulationSpace.Local;
+            main.startColor=new Color(.55f,.9f,1,.85f);var emission=ps.emission;emission.enabled=false;
+            var shape=ps.shape;shape.shapeType=ParticleSystemShapeType.Sphere;shape.radius=radius*.12f;
+            var velocity=ps.velocityOverLifetime;velocity.enabled=true;velocity.orbitalY=5;velocity.orbitalX=1.5f;
+            var fade=ps.colorOverLifetime;fade.enabled=true;var gradient=new Gradient();gradient.SetKeys(new[]{new GradientColorKey(Color.white,0),new GradientColorKey(new Color(.15f,.6f,1),1)},new[]{new GradientAlphaKey(.8f,0),new GradientAlphaKey(0,1)});fade.color=gradient;
+            ParticleSystemRenderer renderer=obj.GetComponent<ParticleSystemRenderer>();renderer.sharedMaterial=particleMaterial;renderer.renderMode=ParticleSystemRenderMode.Stretch;renderer.lengthScale=2;renderer.velocityScale=.08f;renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+            ps.Play();ps.Emit(100);return ps;
         }
         public static void Burst(Transform parent,Vector3 position,bool smoke,float size=1)
         {
@@ -53,6 +88,7 @@ namespace LumiAdventure
     }
     public sealed class LumiChakraSpin:MonoBehaviour
     {
-        private void Update(){transform.Rotate(0,Time.deltaTime*720,Time.deltaTime*120,Space.Self);}
+        public bool IsShuriken {get;set;}
+        private void Update(){transform.Rotate(IsShuriken?0:Time.deltaTime*90,Time.deltaTime*1080,IsShuriken?0:Time.deltaTime*150,Space.Self);}
     }
 }

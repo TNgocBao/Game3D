@@ -28,8 +28,11 @@ namespace LumiAdventure
         private Coroutine invisibilityRoutine;
         private Renderer[] ghostRenderers;
         private Material[][] originalMaterials;
+        private readonly RaycastHit[] aimHits=new RaycastHit[64];
         [SerializeField, Min(.1f)] private float movementSpeed = 5.2f;
 
+        public float MovementSpeed=>movementSpeed*speedMultiplier;
+        public int BasicAttackDamage=>4;
         public int Health { get; private set; } = MaxHealth;
         public int Armor { get; private set; }
         public bool IsAlive => Health > 0;
@@ -39,6 +42,33 @@ namespace LumiAdventure
         public Transform Muzzle => muzzle;
         public CharacterController Controller=>controller;
         public Transform ChakraHand=>infantryMotion.ChakraHand;
+        public Transform WeaponHand=>infantryMotion!=null?infantryMotion.WeaponHand:null;
+        public Vector3 ResolveAimPoint(Ray ray,float range=60)
+        {
+            int count=Physics.RaycastNonAlloc(ray,aimHits,range,~0,QueryTriggerInteraction.Ignore);
+            RaycastHit[] results=aimHits;
+            if(count==aimHits.Length){results=Physics.RaycastAll(ray,range,~0,QueryTriggerInteraction.Ignore);count=results.Length;}
+            float nearest=float.PositiveInfinity;Collider target=null;Vector3 point=ray.GetPoint(range);
+            for(int i=0;i<count;i++)
+            {
+                if(results[i].collider==null || results[i].collider.transform.IsChildOf(transform) || results[i].distance>=nearest)continue;
+                nearest=results[i].distance;target=results[i].collider;point=results[i].point;
+            }
+            if(target!=null)
+            {
+                LumiEnemy enemy=target.GetComponentInParent<LumiEnemy>();if(enemy!=null && enemy.IsAlive)return enemy.AimPoint;
+                LumiVillageBoss boss=target.GetComponentInParent<LumiVillageBoss>();if(boss!=null && boss.IsAlive)return boss.AimPoint;
+            }
+            return point;
+        }
+        public Vector3 CurrentAimPoint()
+        {
+            Camera camera=game.CameraRig.ViewCamera;
+            Ray ray=Cursor.lockState==CursorLockMode.Locked || Application.isMobilePlatform
+                ?camera.ViewportPointToRay(new Vector3(.5f,.5f,0))
+                :camera.ScreenPointToRay(Input.mousePosition);
+            return ResolveAimPoint(ray);
+        }
 
         public void Initialize(LumiGame owner)
         {
@@ -63,7 +93,7 @@ namespace LumiAdventure
         {
             Transform visual=LumiFactory.WorldObject("Naruto Visual",transform,Vector3.zero).transform;
             GameObject character=LumiArt.CreatePlayer(visual);
-            infantryMotion=character.GetComponent<LumiInfantryMotion>();infantryMotion.Configure(game,false);
+            infantryMotion=character.GetComponent<LumiInfantryMotion>();infantryMotion.Configure(game,false);infantryMotion.AlignFeetToGround(controller.bounds.min.y);
             muzzle=LumiFactory.WorldObject("Strike aim",visual,new Vector3(0,1.1f,.55f)).transform;
             BuildShield(visual);
         }
@@ -129,23 +159,14 @@ namespace LumiAdventure
             Vector3 pointer=Input.mousePosition;
             if(!Application.isMobilePlatform && (pointer.x<0 || pointer.x>Screen.width || pointer.y<0 || pointer.y>Screen.height))return;
 
-            Ray ray = game.CameraRig.ViewCamera.ViewportPointToRay(new Vector3(.5f,.5f,0));
             Vector3 aimOrigin=transform.position+Vector3.up*1.1f;
-            Vector3 target = aimOrigin + game.CameraRig.FlatForward * 30f;
-            Plane aimPlane = new Plane(Vector3.up, aimOrigin);
-            if (aimPlane.Raycast(ray, out float aimDistance)) target = ray.GetPoint(aimDistance);
-            if(Physics.Raycast(ray,out RaycastHit hit,80f,~0,QueryTriggerInteraction.Ignore))
-            {
-                LumiEnemy pointedEnemy=hit.collider.GetComponentInParent<LumiEnemy>();
-                if(pointedEnemy!=null && pointedEnemy.IsAlive)target=pointedEnemy.AimPoint;
-            }
+            Vector3 target=CurrentAimPoint();
             if(Application.isMobilePlatform)
             {
                 LumiEnemy assisted = FindAimAssistTarget();
                 target = assisted != null ? assisted.AimPoint : muzzle.position + transform.forward * 30f;
             }
             Vector3 flatAim=target-aimOrigin;flatAim.y=0;
-            if(!Application.isMobilePlatform){flatAim=game.CameraRig.FlatForward;target=aimOrigin+flatAim*30f;}
             if(flatAim.sqrMagnitude<.36f)target=aimOrigin+transform.forward*30;
             else transform.rotation=Application.isMobilePlatform?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(flatAim),720f*Time.deltaTime):Quaternion.LookRotation(flatAim);
             Vector3 direction=(target-muzzle.position).normalized;
@@ -185,6 +206,7 @@ namespace LumiAdventure
             Health = Mathf.Max(0, Health - (amount - absorbed));
             shieldVisual.SetActive(Armor > 0);
             hitFlash.Flash(new Color(1f, 0.15f, 0.12f));
+            if(infantryMotion!=null)infantryMotion.ReactToHit();
             game.Audio.Play("hurt");
             game.SpawnImpact(hitPoint, Color.red);
             game.RefreshHud();

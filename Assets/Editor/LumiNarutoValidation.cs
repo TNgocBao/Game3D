@@ -21,7 +21,7 @@ public static class LumiNarutoValidation
         string[] keys={"VillageLeaf","VillageSand","VillageStone","VillageCloud","VillageMist"};
         for(int level=1;level<=5;level++)
         {
-            game.StartLevel(level);yield return null;
+            game.StartLevelForValidation(level);yield return null;
             LumiVillageBoss[] bosses=Object.FindObjectsOfType<LumiVillageBoss>();
             if(bosses.Length!=1 || bosses[0].BossName!=LumiVillageBoss.Names[level-1])errors.Add("Village "+level+": wrong boss count/name");
             if(game.BossCleared)errors.Add("Village "+level+": boss already cleared");

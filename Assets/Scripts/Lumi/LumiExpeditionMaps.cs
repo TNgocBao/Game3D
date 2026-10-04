@@ -68,9 +68,9 @@ namespace LumiAdventure
                 for(int side=-1;side<=1;side+=2)
                 {
                     for(float z=-config.Depth*.5f+2;z<config.Depth*.5f;z+=3.4f)
-                        Edge(P(side*(config.Width*.5f-1),z),level,wood,leaves,snow,rock,config.Route);
+                        Edge(P(side*(config.Width*.5f-1),z),level,rock,config.Route);
                     for(float x=-config.Width*.5f+2;x<config.Width*.5f;x+=3.4f)
-                        Edge(P(x,side*(config.Depth*.5f-1)),level,wood,leaves,snow,rock,config.Route);
+                        Edge(P(x,side*(config.Depth*.5f-1)),level,rock,config.Route);
                 }
             }
             switch(level)
@@ -80,7 +80,7 @@ namespace LumiAdventure
                     {
                         Vector3 p=P(Random.Range(-35f,35f),Random.Range(-44f,44f));
                         if(RouteDistance(p,config.Route)<7)continue;
-                        ArenaPine(p,wood,leaves,Random.Range(3.3f,6f));
+                        ImportedTree(p,Random.Range(3.3f,6f));
                         if(i%3==0)ArenaRock(p+Vector3.right*2,rock,1.7f);
                     }
                     Material stream=LumiFactory.Material("Forest river",new Color(.23f,.56f,.65f));
@@ -116,7 +116,7 @@ namespace LumiAdventure
                     foreach(Vector3 island in islands)
                     {
                         LumiFactory.Primitive("Snow island",PrimitiveType.Sphere,worldRoot,island+Vector3.up*.09f,new Vector3(15,.18f,12),snow,false);
-                        ArenaPine(island,wood,snow,5);
+                        ImportedTree(island,5);
                         ArenaRock(island+P(3,-2),snow,3);
                     }
                     Material crystal=LumiFactory.Material("Ice spires",new Color(.45f,.8f,.95f));
@@ -152,10 +152,10 @@ namespace LumiAdventure
             weather.AddComponent<LumiBiomeAtmosphere>().Initialize(level);
             Random.state=previous;
         }
-        private void Edge(Vector3 point,int level,Material wood,Material leaves,Material snow,Material rock,Vector3[] route)
+        private void Edge(Vector3 point,int level,Material rock,Vector3[] route)
         {
             if(Vector3.Distance(point,route[0])<10 || Vector3.Distance(point,route[route.Length-1])<9)return;
-            if(level==2)ArenaRock(point,rock,Random.Range(4,6));else ArenaPine(point,wood,level==3?snow:leaves,Random.Range(4,7));
+            if(level==2)ArenaRock(point,rock,Random.Range(4,6));else ImportedTree(point,Random.Range(4,7));
         }
         private void BarrierWithDoor(float width,float z,float gap,float opening,Material wall,float height,string name)
         {

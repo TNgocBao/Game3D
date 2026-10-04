@@ -1,0 +1,10 @@
+using UnityEngine;
+namespace LumiAdventure {
+public sealed class LumiTailedBeastBomb:MonoBehaviour {
+ LumiGame game;Transform shooter;Vector3 direction;int damage;float life=4;LumiProjectile trace;
+ public static GameObject CreateVisual(Transform parent,string name){var root=LumiFactory.WorldObject(name,parent,Vector3.zero);LumiFactory.Primitive("Dense black chakra core",PrimitiveType.Sphere,root.transform,Vector3.zero,Vector3.one*.8f,LumiFactory.Material("Tailed beast black chakra",new Color(.018f,.003f,.025f)),false);var glow=LumiFactory.Material("Tailed beast violet chakra",new Color(.16f,.015f,.45f),true);glow.shader=Shader.Find("Vanguard/Chakra");glow.SetFloat("_Energy",.7f);glow.SetFloat("_Density",.5f);LumiFactory.Primitive("Violet chakra shell",PrimitiveType.Sphere,root.transform,Vector3.zero,Vector3.one,glow,false);return root;}
+ public void Initialize(LumiGame session,Transform source,Vector3 aim,int hitDamage){game=session;shooter=source;direction=aim.normalized;damage=hitDamage;trace=gameObject.AddComponent<LumiProjectile>();trace.Initialize(game,direction,12,damage,false,shooter);trace.enabled=false;}
+ void Update(){if(game==null){Destroy(gameObject);return;}if(!game.IsPlaying)return;float distance=12*Time.deltaTime;if(trace.Trace(transform.position,direction,distance,out RaycastHit hit,.28f)){transform.position=hit.point;Explode();return;}transform.position+=direction*distance;transform.Rotate(0,240*Time.deltaTime,120*Time.deltaTime);life-=Time.deltaTime;if(life<=0)Destroy(gameObject);}
+ void Explode(){var player=game.Player;if(player!=null && player.IsAlive && Vector3.Distance(transform.position,player.Controller.bounds.ClosestPoint(transform.position))<=1.25f)player.TakeDamage(damage,player.transform.position+Vector3.up);foreach(var clone in LumiShadowClone.Active.ToArray())if(clone!=null&&clone.IsAlive&&Vector3.Distance(transform.position,clone.GetComponent<CharacterController>().bounds.ClosestPoint(transform.position))<=1.25f)clone.TakeDamage(damage,clone.AimPoint);LumiChakraVisual.Burst(transform.parent,transform.position,true,.6f);game.Audio.Play("hit",.7f);Destroy(gameObject);}
+}
+}
