@@ -1,4 +1,4 @@
-# Naruto — Hành trình Ngũ Đại Nhẫn Thôn
+# Naruto — Hành Trình Hokage
 
 Unity 2021.3.13f1, Built-in Render Pipeline. Mở `Assets/3D.unity` và nhấn Play.
 

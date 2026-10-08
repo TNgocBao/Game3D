@@ -66,28 +66,21 @@ namespace LumiAdventure
 
         public void PlayLevelMusic(int level)
         {
-            string[] names={"Forest","Desert","Ice","Dungeon","Facility"};
-            AudioClip recorded=Resources.Load<AudioClip>("LumiMusic/"+names[Mathf.Clamp(level-1,0,4)]);
-            if(recorded!=null){music.clip=recorded;music.Play();return;}
-            float[] roots = { 196f, 220f, 174f, 146f, 246f };
-            string key="realm_"+level;
-            if(!clips.TryGetValue(key,out AudioClip clip))
-            {
-                clip=Ambient(key,roots[Mathf.Clamp(level-1,0,4)],level);
-                clips[key]=clip;
-            }
-            music.clip=clip;
-            music.Play();
+            PlayNinjaVillageMusic();
         }
 
         public void PlayMenuMusic()
         {
-            AudioClip recorded=Resources.Load<AudioClip>("LumiMusic/Menu");
-            if(recorded!=null){music.clip=recorded;music.Play();return;}
-            if(!clips.TryGetValue("menu_realm",out AudioClip clip))
+            PlayNinjaVillageMusic();
+        }
+
+        private void PlayNinjaVillageMusic()
+        {
+            AudioClip clip=Resources.Load<AudioClip>("LumiMusic/NinjaVillage");
+            if(clip==null&&!clips.TryGetValue("ninja_village_fallback",out clip))
             {
-                clip=Ambient("menu_realm",220f,2);
-                clips["menu_realm"]=clip;
+                clip=Ambient("ninja_village_fallback",220f,2);
+                clips["ninja_village_fallback"]=clip;
             }
             music.clip=clip;
             music.Play();

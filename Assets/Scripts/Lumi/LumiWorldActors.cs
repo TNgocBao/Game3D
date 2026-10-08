@@ -24,42 +24,7 @@ namespace LumiAdventure
         private void BuildVisual()
         {
             Transform visual = LumiFactory.WorldObject("Visual", transform, Vector3.zero).transform;
-            if (type == LumiPickupType.Star)
-            {
-                Material gold = LumiFactory.Material("Star", new Color(1f, 0.78f, 0.05f), true);
-                LumiFactory.Primitive("Star Core", PrimitiveType.Sphere, visual, Vector3.zero, Vector3.one * 0.45f, gold, false);
-                for (int i = 0; i < 5; i++)
-                {
-                    var ray = LumiFactory.Primitive("Star Ray", PrimitiveType.Cube, visual, Vector3.zero, new Vector3(0.18f, 0.7f, 0.13f), gold, false);
-                    ray.transform.localRotation = Quaternion.Euler(0f, 0f, i * 72f);
-                }
-            }
-            else if (type == LumiPickupType.Health)
-            {
-                Material red = LumiFactory.Material("Heart", new Color(0.95f, 0.08f, 0.18f), true);
-                LumiFactory.Primitive("Heart L", PrimitiveType.Sphere, visual, new Vector3(-0.22f, 0.15f, 0f), Vector3.one * 0.43f, red, false);
-                LumiFactory.Primitive("Heart R", PrimitiveType.Sphere, visual, new Vector3(0.22f, 0.15f, 0f), Vector3.one * 0.43f, red, false);
-                var tip = LumiFactory.Primitive("Heart Tip", PrimitiveType.Cube, visual, new Vector3(0f, -0.18f, 0f), new Vector3(0.55f, 0.55f, 0.35f), red, false);
-                tip.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            }
-            else if (type == LumiPickupType.Armor)
-            {
-                Material white = LumiFactory.Material("Armor", new Color(0.85f, 0.95f, 1f), true);
-                LumiFactory.Primitive("Shield", PrimitiveType.Sphere, visual, Vector3.zero, new Vector3(0.62f, 0.8f, 0.18f), white, false);
-                LumiFactory.Primitive("Shield Cut", PrimitiveType.Cube, visual, new Vector3(0f, 0.25f, 0.11f), new Vector3(0.52f, 0.12f, 0.08f), LumiFactory.Material("ArmorLine", new Color(0.3f, 0.7f, 1f), true), false);
-            }
-            else if (type == LumiPickupType.Speed)
-            {
-                Material white = LumiFactory.Material("Shoe", Color.white, true);
-                LumiFactory.Primitive("Shoe", PrimitiveType.Cube, visual, new Vector3(0f, -0.05f, 0f), new Vector3(0.9f, 0.32f, 0.38f), white, false);
-                LumiFactory.Primitive("Ankle", PrimitiveType.Cube, visual, new Vector3(-0.28f, 0.25f, 0f), new Vector3(0.34f, 0.48f, 0.36f), white, false);
-            }
-            else
-            {
-                Material cloak = LumiFactory.Material("Cloak", new Color(0.64f, 0.78f, 1f, 0.7f), true, true);
-                LumiFactory.Primitive("Cloak", PrimitiveType.Capsule, visual, Vector3.zero, new Vector3(0.65f, 0.8f, 0.25f), cloak, false);
-                LumiFactory.Primitive("Hood", PrimitiveType.Sphere, visual, new Vector3(0f, 0.62f, 0f), Vector3.one * 0.42f, cloak, false);
-            }
+            LumiPickupVisualFactory.Build(visual,type);
         }
 
         private void Update()
@@ -115,7 +80,8 @@ namespace LumiAdventure
             if (Input.GetKeyDown(KeyCode.E) || LumiMobileInput.ConsumeInteract())
             {
                 game.Audio.Play("dialogue");
-                game.ShowDialogue(speaker, message);
+                string buffMessage=game.NpcBuffs.TalkTo(game.Player);
+                game.ShowDialogue(speaker, message+"\n\n<b>"+buffMessage+"</b>");
             }
         }
 
@@ -123,7 +89,7 @@ namespace LumiAdventure
         {
             if (other.GetComponentInParent<LumiPlayer>() == null) return;
             nearby = true;
-            game.ShowInteractionPrompt("Nhấn E để nói chuyện với " + speaker);
+            game.ShowInteractionPrompt((game.Controls.UsesMobileControls?"Chạm NÓI để nói chuyện với ":"Nhấn E để nói chuyện với ") + speaker);
         }
 
         private void OnTriggerExit(Collider other)
@@ -131,6 +97,7 @@ namespace LumiAdventure
             if (other.GetComponentInParent<LumiPlayer>() == null) return;
             nearby = false;
             game.HideInteractionPrompt();
+            game.CloseDialogue();
         }
     }
 

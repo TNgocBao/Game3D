@@ -20,7 +20,6 @@ namespace LumiAdventure
         private GameObject resultPanel;
         private GameObject pausePanel;
         private GameObject dialoguePanel;
-        private GameObject mobilePanel;
         private Text healthText;
         private Text armorText;
         private Text starText;
@@ -28,7 +27,6 @@ namespace LumiAdventure
         private Text toastText;
         private Text promptText;
         private Text dialogueText;
-        private Text buffText;
         private Slider healthSlider;
         private Slider armorSlider;
         private LumiDirectionArrow directionArrow;
@@ -43,8 +41,13 @@ namespace LumiAdventure
         private bool pointerWasLocked;
         private int score;
         private LumiTransientPool transientPool;
+        private LumiMobileControlsView mobileControlsView;
 
         public LumiAudio Audio { get; private set; }
+        public LumiControlScheme Controls {get;private set;}
+        public LumiLevelTimer LevelTimer {get;private set;}
+        public LumiNpcBuffService NpcBuffs {get;private set;}
+        public LumiBuffStatusView BuffStatusView {get;private set;}
         public LumiPlayer Player { get; private set; }
         public LumiCameraRig CameraRig { get; private set; }
         public int CurrentLevel=>currentLevel;
@@ -59,27 +62,26 @@ namespace LumiAdventure
             QualitySettings.shadowDistance = 45f;
             QualitySettings.shadowResolution = ShadowResolution.Medium;
             QualitySettings.shadowCascades = 2;
+            Controls=gameObject.AddComponent<LumiControlScheme>();Controls.Initialize();
+            LevelTimer=gameObject.AddComponent<LumiLevelTimer>();LevelTimer.Initialize(this);
+            NpcBuffs=gameObject.AddComponent<LumiNpcBuffService>();NpcBuffs.Initialize(this);
+            gameObject.AddComponent<LumiPauseInputRouter>().Initialize(this);
             Audio = gameObject.AddComponent<LumiAudio>();
             Audio.Initialize();
             BuildInterface();
             ShowLevelMenu();
         }
 
-        private void Update()
+        internal void HandleEscapeCommand()
         {
-            if(settingsPanel!=null && settingsPanel.activeSelf){if(Input.GetKeyDown(KeyCode.Escape))CloseAudioSettings();return;}
-            if (state == GameState.Playing)
+            if(settingsPanel!=null && settingsPanel.activeSelf){CloseGameSettings();return;}
+            if(state==GameState.Playing)
             {
-                if (Input.GetKeyDown(KeyCode.Escape))
-                {
-                    if (dialoguePanel.activeSelf) CloseDialogue();
-                    else PauseGame();
-                }
+                if(dialoguePanel.activeSelf)CloseDialogue();
+                else PauseGame();
             }
-            else if (state == GameState.Paused && Input.GetKeyDown(KeyCode.Escape))
-            {
-                ResumeGame();
-            }
+            else if(state==GameState.Paused)ResumeGame();
+            else if(state==GameState.Won||state==GameState.Lost)ShowLevelMenu();
         }
 
         private void DisableOriginalScene()
@@ -125,6 +127,8 @@ namespace LumiAdventure
             selectedMission = currentLevel;
             collectedStars = 0;
             score = 0;
+            LevelTimer.BeginLevel();
+            NpcBuffs.BeginLevel();
             totalStars = 5;
             for (int i = 0; i < kills.Length; i++) kills[i] = 0;
             LumiMobileInput.Reset();
@@ -133,11 +137,11 @@ namespace LumiAdventure
             if (menuBackdrop != null) menuBackdrop.SetVisible(false);
             HideAllPanels();
             hudPanel.SetActive(true);
-            mobilePanel.SetActive(Application.isMobilePlatform);
+            mobileControlsView.SetVisible(Controls.UsesMobileControls);
             BuildLevel(currentLevel);
             state = GameState.Playing;
             BindNarutoHud();
-            SetCursor(true);
+            SetCursor(CameraRig==null || !CameraRig.MovementFacing);
             Audio.PlayLevelMusic(currentLevel);
             RefreshHud();
             ShowToast("VÙNG ĐẤT " + currentLevel + " — " + LevelName(currentLevel), LevelAccent(currentLevel));
@@ -149,6 +153,7 @@ namespace LumiAdventure
             state = GameState.Paused;
             Time.timeScale = 0f;
             pausePanel.SetActive(true);
+            mobileControlsView.SetVisible(false);
             SetCursor(false);
         }
 
@@ -158,7 +163,8 @@ namespace LumiAdventure
             pausePanel.SetActive(false);
             Time.timeScale = 1f;
             state = GameState.Playing;
-            SetCursor(true);
+            mobileControlsView.SetVisible(Controls.UsesMobileControls);
+            SetCursor(CameraRig==null || !CameraRig.MovementFacing);
         }
 
         public void LoseLevel()
@@ -223,6 +229,17 @@ namespace LumiAdventure
             if(transientPool!=null)transientPool.Impact(position,color);
         }
 
+        public bool TryDropEnemySupportItem(Vector3 position)
+        {
+            if(worldRoot==null||Random.value>=.5f)return false;
+            LumiPickupType type=Random.value<.5f?LumiPickupType.Health:LumiPickupType.Armor;
+            GameObject item=new GameObject("Quái rơi "+(type==LumiPickupType.Health?"Hồi máu":"Giáp"));
+            item.transform.SetParent(worldRoot,false);
+            item.transform.position=position+Vector3.up*.9f;
+            item.AddComponent<LumiPickup>().Initialize(this,type);
+            return true;
+        }
+
         public void RefreshHud()
         {
             if (Player == null || healthText == null) return;
@@ -231,7 +248,6 @@ namespace LumiAdventure
             starText.text = "★ " + collectedStars + "/" + totalStars + "   ·   " + score;
             healthSlider.value = Player.Health / (float)LumiPlayer.MaxHealth;
             armorSlider.value = Player.Armor / (float)LumiPlayer.MaxArmor;
-            buffText.text = Player.IsInvisible ? "TÀNG HÌNH" : string.Empty;
         }
 
         public void SetDirectionArrow(bool visible)
@@ -280,14 +296,26 @@ namespace LumiAdventure
         {
             promptText.text = message;
             promptText.gameObject.SetActive(true);
+            mobileControlsView.SetInteractionVisible(true);
         }
 
-        public void HideInteractionPrompt() => promptText.gameObject.SetActive(false);
+        public void HideInteractionPrompt()
+        {
+            promptText.gameObject.SetActive(false);
+            mobileControlsView.SetInteractionVisible(false);
+        }
 
         public bool IsPointerOverUi()
         {
-            if (Application.isMobilePlatform || Cursor.lockState==CursorLockMode.Locked) return false;
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            if(EventSystem.current==null)return false;
+            if(Controls.UsesMobileControls)
+            {
+                for(int i=0;i<Input.touchCount;i++)
+                    if(EventSystem.current.IsPointerOverGameObject(Input.GetTouch(i).fingerId))return true;
+                return EventSystem.current.IsPointerOverGameObject();
+            }
+            if(Cursor.lockState==CursorLockMode.Locked)return false;
+            return EventSystem.current.IsPointerOverGameObject();
         }
 
         private void BuildInterface()
@@ -316,10 +344,11 @@ namespace LumiAdventure
             BuildHud();
             BuildPausePanel();
             BuildDialoguePanel();
-            BuildMobilePanel();
+            mobileControlsView=gameObject.AddComponent<LumiMobileControlsView>();
+            mobileControlsView.Initialize(this,canvas.transform);
             BuildNarutoHud();
             resultPanel = Panel("Result", new Color(0.02f, 0.035f, 0.065f, 0.94f));
-            BuildAudioSettings();
+            BuildGameSettings();
 
             toastText = LumiFactory.Text(canvas.transform, string.Empty, 34, TextAnchor.MiddleCenter, Color.white);
             LumiFactory.Rect(toastText.rectTransform, new Vector2(0.5f, 0.78f), new Vector2(900f, 70f), Vector2.zero);
@@ -361,13 +390,18 @@ namespace LumiAdventure
 
             Image status = LumiFactory.Image(hudPanel.transform, new Color(0.02f, 0.04f, 0.08f, 0.78f));
             LumiFactory.Rect(status.rectTransform, new Vector2(0f, 1f), new Vector2(430f, 195f), new Vector2(230f, -115f));
+            status.sprite=RoundedPanelSprite();status.type=Image.Type.Sliced;
             status.raycastTarget = false;
+            Image healthIcon=LumiFactory.Image(status.transform,Color.white);healthIcon.sprite=LumiIconLibrary.Get(LumiIconKind.Health);
+            LumiFactory.Rect(healthIcon.rectTransform,new Vector2(0,.8f),new Vector2(40,40),new Vector2(34,0));healthIcon.raycastTarget=false;
             healthText = LumiFactory.Text(status.transform, "MÁU", 23, TextAnchor.MiddleLeft, Color.white);
-            LumiFactory.Rect(healthText.rectTransform, new Vector2(0.5f, 0.8f), new Vector2(370f, 38f), Vector2.zero);
+            LumiFactory.Rect(healthText.rectTransform, new Vector2(0.5f, 0.8f), new Vector2(330f, 38f), new Vector2(24,0));
             healthText.raycastTarget = false;
             healthSlider = CreateBar(status.transform, new Vector2(0f, 35f), new Color(0.95f, 0.15f, 0.2f));
+            Image armorIcon=LumiFactory.Image(status.transform,Color.white);armorIcon.sprite=LumiIconLibrary.Get(LumiIconKind.Armor);
+            LumiFactory.Rect(armorIcon.rectTransform,new Vector2(0,.47f),new Vector2(40,40),new Vector2(34,0));armorIcon.raycastTarget=false;
             armorText = LumiFactory.Text(status.transform, "GIÁP", 23, TextAnchor.MiddleLeft, Color.white);
-            LumiFactory.Rect(armorText.rectTransform, new Vector2(0.5f, 0.47f), new Vector2(370f, 38f), Vector2.zero);
+            LumiFactory.Rect(armorText.rectTransform, new Vector2(0.5f, 0.47f), new Vector2(330f, 38f), new Vector2(24,0));
             armorText.raycastTarget = false;
             armorSlider = CreateBar(status.transform, new Vector2(0f, -30f), new Color(0.3f, 0.78f, 1f));
 
@@ -377,11 +411,18 @@ namespace LumiAdventure
             objectiveText = LumiFactory.Text(hudPanel.transform, "HẠ KAGE CUỐI LÀNG ĐỂ MỞ CỔNG", 22, TextAnchor.MiddleCenter, Color.white);
             LumiFactory.Rect(objectiveText.rectTransform, new Vector2(0.5f, 0.885f), new Vector2(700f, 45f), Vector2.zero);
             objectiveText.raycastTarget = false;
-            buffText = LumiFactory.Text(hudPanel.transform, string.Empty, 22, TextAnchor.MiddleRight, new Color(0.7f, 0.92f, 1f));
-            LumiFactory.Rect(buffText.rectTransform, new Vector2(0.9f, 0.94f), new Vector2(500f, 60f), Vector2.zero);
-            buffText.raycastTarget = false;
-            Button settings=LumiFactory.Button(hudPanel.transform,"CÀI ĐẶT",new Color(.12f,.22f,.28f,.95f),OpenAudioSettings);
-            LumiFactory.Rect(settings.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(220,62),new Vector2(-135,-120));
+            Text timerText=LumiFactory.Text(hudPanel.transform,"THỜI GIAN  15:00",24,TextAnchor.MiddleCenter,new Color(1f,.9f,.45f));
+            LumiFactory.Rect(timerText.rectTransform,new Vector2(.5f,.835f),new Vector2(420f,48f),Vector2.zero);timerText.raycastTarget=false;
+            LevelTimer.BindDisplay(timerText);
+            BuffStatusView=gameObject.AddComponent<LumiBuffStatusView>();
+            BuffStatusView.Initialize(this,hudPanel.transform);
+            Button settings=LumiFactory.Button(hudPanel.transform,"SETTING",new Color(.12f,.22f,.28f,.95f),OpenGameSettings);
+            settings.gameObject.name="Setting";
+            settings.image.sprite=LumiAbilityHud.Circle;
+            settings.image.type=Image.Type.Simple;
+            Text settingsLabel=settings.GetComponentInChildren<Text>();
+            settingsLabel.fontSize=16;settingsLabel.alignment=TMPro.TextAlignmentOptions.Center;
+            LumiFactory.Rect(settings.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(112,112),new Vector2(-75,-90));
 
             Text crosshair = LumiFactory.Text(hudPanel.transform, "+", 36, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.85f));
             LumiFactory.Rect(crosshair.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(44f, 44f), Vector2.zero);
@@ -393,13 +434,14 @@ namespace LumiAdventure
         private Slider CreateBar(Transform parent, Vector2 position, Color fillColor)
         {
             Image background = LumiFactory.Image(parent, new Color(0.1f, 0.14f, 0.18f, 0.95f));
-            LumiFactory.Rect(background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(370f, 18f), position);
+            background.sprite=RoundedPanelSprite();background.type=Image.Type.Sliced;
+            LumiFactory.Rect(background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(370f, 22f), position);
             background.raycastTarget = false;
             var fillArea = new GameObject("Fill Area", typeof(RectTransform));
             fillArea.transform.SetParent(background.transform, false);
             LumiFactory.Stretch(fillArea.GetComponent<RectTransform>(), 2f);
             Image fill = LumiFactory.Image(fillArea.transform, fillColor);
-            LumiFactory.Stretch(fill.rectTransform);
+            fill.sprite=RoundedPanelSprite();fill.type=Image.Type.Sliced;LumiFactory.Stretch(fill.rectTransform);
             fill.raycastTarget = false;
             Slider slider = background.gameObject.AddComponent<Slider>();
             slider.fillRect = fill.rectTransform;
@@ -420,7 +462,7 @@ namespace LumiAdventure
             UiText(board.transform,"Sẵn sàng tiếp tục hành trình?",28,UiMuted,new Vector2(520,65),new Vector2(0,97),TextAnchor.MiddleCenter);
             UiAction(board.transform,"TIẾP TỤC",new Vector2(500,76),new Vector2(0,0),UiOrange,ResumeGame);
             UiAction(board.transform,"CHỌN LÀNG",new Vector2(500,76),new Vector2(0,-97),new Color(.12f,.155f,.22f),ShowLevelMenu);
-            UiAction(board.transform,"CÀI ĐẶT ÂM THANH",new Vector2(500,76),new Vector2(0,-194),new Color(.12f,.155f,.22f),OpenAudioSettings);
+            UiAction(board.transform,"SETTING",new Vector2(500,76),new Vector2(0,-194),new Color(.12f,.155f,.22f),OpenGameSettings);
             pausePanel.SetActive(false);
         }
 
@@ -445,43 +487,6 @@ namespace LumiAdventure
             Button close=LumiFactory.Button(dialoguePanel.transform,"×",new Color(.2f,.28f,.3f),CloseDialogue);
             LumiFactory.Rect(close.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(44,44),new Vector2(-32,-32));
             dialoguePanel.SetActive(false);
-        }
-
-        private void BuildMobilePanel()
-        {
-            mobilePanel = new GameObject("Mobile Controls", typeof(RectTransform));
-            mobilePanel.transform.SetParent(canvas.transform, false);
-            LumiFactory.Stretch(mobilePanel.GetComponent<RectTransform>());
-
-            Image look = LumiFactory.Image(mobilePanel.transform, new Color(1f, 1f, 1f, 0.001f));
-            look.rectTransform.anchorMin = new Vector2(0.45f, 0f);
-            look.rectTransform.anchorMax = Vector2.one;
-            look.rectTransform.offsetMin = Vector2.zero;
-            look.rectTransform.offsetMax = Vector2.zero;
-            look.gameObject.AddComponent<LumiLookZone>();
-
-            Image stick = LumiFactory.Image(mobilePanel.transform, new Color(0.08f, 0.12f, 0.18f, 0.48f));
-            LumiFactory.Rect(stick.rectTransform, new Vector2(0f, 0f), new Vector2(260f, 260f), new Vector2(180f, 180f));
-            Image knob = LumiFactory.Image(stick.transform, new Color(0.35f, 0.9f, 0.88f, 0.75f));
-            LumiFactory.Rect(knob.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(105f, 105f), Vector2.zero);
-            var stickControl = stick.gameObject.AddComponent<LumiVirtualStick>();
-            stickControl.Knob = knob.rectTransform;
-
-            CreateMobileButton("NHẢY", new Vector2(0f, 0f), new Vector2(360f, 120f), new Color(0.1f, 0.7f, 0.82f, 0.78f), LumiMobileAction.Jump);
-            CreateMobileButton("NÓI", new Vector2(0f, 0f), new Vector2(160f, 380f), new Color(0.55f, 0.35f, 0.82f, 0.78f), LumiMobileAction.Interact);
-            mobilePanel.SetActive(false);
-        }
-
-        private void CreateMobileButton(string label, Vector2 anchor, Vector2 position, Color color, LumiMobileAction action)
-        {
-            Image image = LumiFactory.Image(mobilePanel.transform, color);
-            image.gameObject.name = label;
-            LumiFactory.Rect(image.rectTransform, anchor, new Vector2(135f, 135f), position);
-            var actionButton = image.gameObject.AddComponent<LumiMobileActionButton>();
-            actionButton.Action = action;
-            Text text = LumiFactory.Text(image.transform, label, 22, TextAnchor.MiddleCenter, Color.white);
-            LumiFactory.Stretch(text.rectTransform);
-            text.raycastTarget = false;
         }
 
         private void BuildResult(bool won, int stars)
@@ -527,7 +532,7 @@ namespace LumiAdventure
 
         private void SetCursor(bool playing)
         {
-            pointerWasLocked = playing && !Application.isMobilePlatform;
+            pointerWasLocked = playing && Controls.UsesPcControls;
             Cursor.lockState = pointerWasLocked ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !pointerWasLocked;
         }
@@ -535,6 +540,14 @@ namespace LumiAdventure
         public void SetMouseLook(bool enabled)
         {
             SetCursor(enabled && IsPlaying);
+        }
+        public void ApplyControlScheme()
+        {
+            LumiMobileInput.Reset();
+            if(mobileControlsView!=null)mobileControlsView.SetVisible(IsPlaying&&Controls.UsesMobileControls);
+            if(abilityHud!=null)abilityHud.ApplyControlScheme();
+            if(IsPlaying)SetCursor(Controls.UsesPcControls&&(CameraRig==null||!CameraRig.MovementFacing));
+            else SetCursor(false);
         }
         private void OnApplicationFocus(bool focused)
         {
@@ -549,7 +562,7 @@ namespace LumiAdventure
             resultPanel.SetActive(false);
             pausePanel.SetActive(false);
             dialoguePanel.SetActive(false);
-            mobilePanel.SetActive(false);
+            mobileControlsView.SetVisible(false);
             promptText.gameObject.SetActive(false);
             if(settingsPanel!=null)settingsPanel.SetActive(false);
         }

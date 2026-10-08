@@ -1,0 +1,10 @@
+Ninja Village background music
+
+Source title: Ninja Theme
+Author: Spring Spring / Julie Damsgaard
+Source: https://opengameart.org/content/ninja-theme
+License: Creative Commons Zero (CC0 1.0)
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+Imported file: Assets/Resources/LumiMusic/NinjaVillage.ogg
+The source page lists koto, flute, bells and ninja-themed instrumentation.

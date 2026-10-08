@@ -6,8 +6,8 @@ namespace LumiAdventure
     [RequireComponent(typeof(CharacterController))]
     public class LumiPlayer : MonoBehaviour, ILumiDamageable
     {
-        public const int MaxHealth = 15;
-        public const int MaxArmor = 15;
+        public const int MaxHealth = 20;
+        public const int MaxArmor = 20;
 
         private LumiGame game;
         private CharacterController controller;
@@ -15,29 +15,33 @@ namespace LumiAdventure
         private Transform muzzle;
         private GameObject shieldVisual;
         private float verticalVelocity;
-        private float speedMultiplier = 1f;
-        private float speedUntil;
-        private float invisibleUntil;
         private Vector3 lastPosition;
         private float idleTime;
         private bool wasGrounded;
         private LumiInfantryMotion infantryMotion;
         private LumiNarutoSkills skills;
+        private LumiPlayerMovementInput movementInput;
+        private LumiPlayerCombatInput combatInput;
+        private LumiPlayerBuffController buffs;
         private Vector3 safeRespawnPoint;
         private float nextFallRecovery;
         private Coroutine invisibilityRoutine;
         private Renderer[] ghostRenderers;
         private Material[][] originalMaterials;
         private readonly RaycastHit[] aimHits=new RaycastHit[64];
+        private bool movementGesture;
+        private float movementBasisYaw;
+        public Vector3 LastMovementDirection{get;private set;}
         [SerializeField, Min(.1f)] private float movementSpeed = 5.2f;
 
-        public float MovementSpeed=>movementSpeed*speedMultiplier;
-        public int BasicAttackDamage=>4;
+        public float MovementSpeed=>movementSpeed*buffs.SpeedMultiplier;
+        public int BasicAttackDamage=>ScaleOutgoingDamage(4);
         public int Health { get; private set; } = MaxHealth;
-        public int Armor { get; private set; }
+        public int Armor { get; private set; } = MaxArmor;
         public bool IsAlive => Health > 0;
-        public bool IsInvisible => Time.time < invisibleUntil;
-        public bool IsSpeedBoosted => Time.time < speedUntil;
+        public bool IsInvisible => buffs!=null&&buffs.IsActive(LumiBuffType.Invisibility);
+        public bool IsSpeedBoosted => buffs!=null&&buffs.IsActive(LumiBuffType.Speed);
+        public LumiPlayerBuffController Buffs=>buffs;
         public float IdleTime => idleTime;
         public Transform Muzzle => muzzle;
         public CharacterController Controller=>controller;
@@ -64,15 +68,19 @@ namespace LumiAdventure
         public Vector3 CurrentAimPoint()
         {
             Camera camera=game.CameraRig.ViewCamera;
-            Ray ray=Cursor.lockState==CursorLockMode.Locked || Application.isMobilePlatform
-                ?camera.ViewportPointToRay(new Vector3(.5f,.5f,0))
-                :camera.ScreenPointToRay(Input.mousePosition);
+            Ray ray;
+            if(combatInput.UsesTouchAim&&game.CameraRig.MovementFacing&&LumiMobileInput.HasAim)
+                ray=camera.ScreenPointToRay(LumiMobileInput.AimScreenPoint);
+            else if(Cursor.lockState==CursorLockMode.Locked||combatInput.UsesTouchAim)
+                ray=camera.ViewportPointToRay(new Vector3(.5f,.5f,0));
+            else ray=camera.ScreenPointToRay(Input.mousePosition);
             return ResolveAimPoint(ray);
         }
 
         public void Initialize(LumiGame owner)
         {
             game = owner;
+            buffs=gameObject.AddComponent<LumiPlayerBuffController>();
             controller = GetComponent<CharacterController>();
             controller.height = 1.8f;
             controller.radius = 0.42f;
@@ -85,6 +93,8 @@ namespace LumiAdventure
             hitFlash = gameObject.AddComponent<LumiHitFlash>();
             gameObject.AddComponent<LumiSpeedWind>().Initialize(this,game);
             skills=gameObject.AddComponent<LumiNarutoSkills>();skills.Initialize(this,game);
+            movementInput=gameObject.AddComponent<LumiPlayerMovementInput>();movementInput.Initialize(game);
+            combatInput=gameObject.AddComponent<LumiPlayerCombatInput>();combatInput.Initialize(game);
             lastPosition = transform.position;
             safeRespawnPoint = transform.position;
         }
@@ -101,14 +111,8 @@ namespace LumiAdventure
         private void BuildShield(Transform visual)
         {
             shieldVisual = LumiFactory.WorldObject("Armor Shield", visual, new Vector3(0f, 1f, 0f));
-            Material shield = LumiFactory.Material("Shield", new Color(0.85f, 0.95f, 1f, 0.55f), true, true);
-            for (int i = 0; i < 18; i++)
-            {
-                float angle = i * Mathf.PI * 2f / 18f;
-                Vector3 pos = new Vector3(Mathf.Cos(angle) * 0.72f, 0f, Mathf.Sin(angle) * 0.72f);
-                LumiFactory.Primitive("Shield Spark", PrimitiveType.Sphere, shieldVisual.transform, pos, Vector3.one * 0.09f, shield, false);
-            }
-            shieldVisual.SetActive(false);
+            shieldVisual.AddComponent<LumiShieldFormation>().Build();
+            shieldVisual.SetActive(Armor>0);
         }
 
         private void Update()
@@ -116,28 +120,21 @@ namespace LumiAdventure
             if (game == null || !game.IsPlaying || !IsAlive) return;
             Move();
             Shoot();
-            UpdateBuffs();
             TrackIdle();
             RecoverFromFall();
         }
 
         private void Move()
         {
-            Vector2 input = LumiMobileInput.Move;
-            if (!Application.isMobilePlatform)
-            {
-                input += new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-            }
-            input = Vector2.ClampMagnitude(input, 1f);
+            Vector2 input=movementInput.ReadMovement();
 
-            Vector3 forward = game.CameraRig.FlatForward;
-            Vector3 right = Vector3.Cross(Vector3.up, forward);
-            Vector3 direction = forward * input.y + right * input.x;
-            float speed = movementSpeed * speedMultiplier;
+            Vector3 direction=ResolveMovementDirection(input);
+            FaceMovement(direction);
+            float speed = MovementSpeed;
             controller.Move(direction * speed * Time.deltaTime);
 
             if (controller.isGrounded && verticalVelocity < 0f) verticalVelocity = -2f;
-            bool jump = Input.GetKeyDown(KeyCode.Space) || LumiMobileInput.ConsumeJump();
+            bool jump=movementInput.ConsumeJump();
             if (jump && controller.isGrounded)
             {
                 verticalVelocity = 7.2f;
@@ -151,28 +148,64 @@ namespace LumiAdventure
             if (infantryMotion != null) infantryMotion.SetGrounded(controller.isGrounded);
         }
 
+        private Vector3 ResolveMovementDirection(Vector2 input)
+        {
+            if(input.sqrMagnitude<.0025f){movementGesture=false;LastMovementDirection=Vector3.zero;return Vector3.zero;}
+            Vector3 direction;
+            if(game.CameraRig.MovementFacing)
+            {
+                if(!movementGesture){movementBasisYaw=transform.eulerAngles.y;movementGesture=true;}
+                Quaternion basis=Quaternion.Euler(0,movementBasisYaw,0);
+                direction=basis*(Vector3.forward*input.y+Vector3.right*input.x);
+            }
+            else
+            {
+                movementGesture=false;
+                Vector3 forward=game.CameraRig.FlatForward;
+                direction=forward*input.y+Vector3.Cross(Vector3.up,forward)*input.x;
+            }
+            LastMovementDirection=direction.normalized;
+            return Vector3.ClampMagnitude(direction,1);
+        }
+
+        private void FaceMovement(Vector3 direction)
+        {
+            if(!game.CameraRig.MovementFacing||direction.sqrMagnitude<.001f)return;
+            direction.y=0f;
+            if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.LookRotation(direction.normalized,Vector3.up);
+        }
+
         private void Shoot()
         {
-            bool wantsShoot = Input.GetMouseButton(0) || LumiMobileInput.ConsumeShoot();
+            // Phones report every touch as mouse button 0. Mobile basic attacks are
+            // dispatched directly by the dedicated HUD button instead.
+            bool wantsShoot=combatInput.BasicAttackPressed;
             if(game.IsPointerOverUi())return;
-            if(!Application.isMobilePlatform && (!game.CameraRig.MouseLookActive || game.CameraRig.ReacquiredThisFrame))return;
+            if(game.Controls.UsesPcControls&&!game.CameraRig.MovementFacing&&(!game.CameraRig.MouseLookActive||game.CameraRig.ReacquiredThisFrame))return;
             Vector3 pointer=Input.mousePosition;
-            if(!Application.isMobilePlatform && (pointer.x<0 || pointer.x>Screen.width || pointer.y<0 || pointer.y>Screen.height))return;
+            if(game.Controls.UsesPcControls&&(pointer.x<0||pointer.x>Screen.width||pointer.y<0||pointer.y>Screen.height))return;
 
             Vector3 aimOrigin=transform.position+Vector3.up*1.1f;
             Vector3 target=CurrentAimPoint();
-            if(Application.isMobilePlatform)
+            if(combatInput.UsesTouchAim&&(!game.CameraRig.MovementFacing||!LumiMobileInput.HasAim))
             {
                 LumiEnemy assisted = FindAimAssistTarget();
                 target = assisted != null ? assisted.AimPoint : muzzle.position + transform.forward * 30f;
             }
             Vector3 flatAim=target-aimOrigin;flatAim.y=0;
             if(flatAim.sqrMagnitude<.36f)target=aimOrigin+transform.forward*30;
-            else transform.rotation=Application.isMobilePlatform?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(flatAim),720f*Time.deltaTime):Quaternion.LookRotation(flatAim);
+            else FaceAim(flatAim);
             Vector3 direction=(target-muzzle.position).normalized;
             if(direction.sqrMagnitude<.001f)direction=transform.forward;
             if(!wantsShoot)return;
             if(skills!=null)skills.TryBasicAttack();
+        }
+
+        private void FaceAim(Vector3 flatAim)
+        {
+            if(game.CameraRig.MovementFacing)return;
+            Quaternion facing=Quaternion.LookRotation(flatAim);
+            transform.rotation=game.Controls.UsesMobileControls?Quaternion.RotateTowards(transform.rotation,facing,720f*Time.deltaTime):facing;
         }
 
         private LumiEnemy FindAimAssistTarget()
@@ -201,6 +234,7 @@ namespace LumiAdventure
         public void TakeDamage(int amount, Vector3 hitPoint)
         {
             if (!IsAlive) return;
+            amount=Mathf.Max(1,Mathf.CeilToInt(amount*(buffs==null?1f:buffs.DamageTakenMultiplier)));
             int absorbed = Mathf.Min(Armor, amount);
             Armor -= absorbed;
             Health = Mathf.Max(0, Health - (amount - absorbed));
@@ -228,14 +262,13 @@ namespace LumiAdventure
 
         public void BoostSpeed(float duration)
         {
-            speedMultiplier = 1.5f;
-            speedUntil = Mathf.Max(speedUntil, Time.time + duration);
+            buffs.Apply(LumiBuffType.Speed,duration,1.5f);
             game.RefreshHud();
         }
 
         public void BecomeInvisible(float duration)
         {
-            invisibleUntil = Mathf.Max(invisibleUntil, Time.time + duration);
+            buffs.Apply(LumiBuffType.Invisibility,duration,1f);
             if (invisibilityRoutine == null) invisibilityRoutine = StartCoroutine(InvisibilityVisual(duration));
             game.RefreshHud();
         }
@@ -253,14 +286,13 @@ namespace LumiAdventure
             game.RefreshHud();
         }
 
-        private void UpdateBuffs()
+        public void ApplyNpcBuff(LumiBuffType type,float duration)
         {
-            if (speedMultiplier > 1f && Time.time >= speedUntil)
-            {
-                speedMultiplier = 1f;
-                game.RefreshHud();
-            }
+            buffs.Apply(type,duration,1.5f);
+            game.RefreshHud();
         }
+
+        public int ScaleOutgoingDamage(int baseDamage)=>Mathf.Max(1,Mathf.RoundToInt(baseDamage*(buffs==null?1f:buffs.AttackMultiplier)));
 
         private void TrackIdle()
         {

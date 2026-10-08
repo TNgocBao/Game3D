@@ -112,7 +112,7 @@ namespace LumiAdventure
             star.transform.position=(hand!=null?hand.position:transform.position+Vector3.up*1.05f)+transform.forward*.3f;
             // The mesh lies in XY; map that plane onto the horizontal XZ plane.
             star.transform.rotation=Quaternion.LookRotation(Vector3.up,transform.forward);
-            LumiProjectile projectile=star.AddComponent<LumiProjectile>();Vector3 aim=player.CurrentAimPoint()-star.transform.position;if(aim.sqrMagnitude<.001f)aim=game.CameraRig.ViewCamera.transform.forward;projectile.Initialize(game,aim.normalized,22,4,true,transform);projectile.SetSpin(new Vector3(0,0,1800));game.Audio.Play("wind",.3f);
+            LumiProjectile projectile=star.AddComponent<LumiProjectile>();Vector3 aim=player.CurrentAimPoint()-star.transform.position;if(aim.sqrMagnitude<.001f)aim=game.CameraRig.ViewCamera.transform.forward;projectile.Initialize(game,aim.normalized,22,player.BasicAttackDamage,true,transform);projectile.SetSpin(new Vector3(0,0,1800));game.Audio.Play("wind",.3f);
         }
         private IEnumerator Rasengan(GameObject orb,float power)
         {
@@ -156,6 +156,7 @@ namespace LumiAdventure
         }
         public void DamageArea(Vector3 point,float radius,int damage,HashSet<LumiEnemy> victims,bool frontal,bool newAttack=false,HashSet<LumiVillageBoss> attackBosses=null)
         {
+            damage=player.ScaleOutgoingDamage(damage);
             HashSet<LumiVillageBoss> bosses=attackBosses??bossVictims;
             if(newAttack)bosses.Clear();
             int count=Physics.OverlapSphereNonAlloc(point,radius,hits,~0,QueryTriggerInteraction.Ignore);

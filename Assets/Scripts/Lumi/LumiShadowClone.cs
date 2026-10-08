@@ -29,7 +29,7 @@ namespace LumiAdventure
         public Vector3 AimPoint=>transform.position+Vector3.up;
         public void Initialize(LumiGame session,LumiPlayer player,float duration)
         {
-            game=session;owner=player;MaxHealth=LumiPlayer.MaxHealth*.3f;Health=Mathf.Min(MaxHealth,player.Health*.3f);Armor=player.Armor*.3f;AttackDamage=player.BasicAttackDamage*.3f;MovementSpeed=player.MovementSpeed*.3f;IsAlive=true;ends=Time.time+duration;Active.Add(this);
+            game=session;owner=player;MaxHealth=LumiPlayer.MaxHealth*.3f;Health=Mathf.Min(MaxHealth,player.Health*.3f);Armor=player.Armor*.3f;AttackDamage=player.BasicAttackDamage*.3f;MovementSpeed=player.MovementSpeed*.6f;IsAlive=true;ends=Time.time+duration;Active.Add(this);
             controller=GetComponent<CharacterController>();controller.height=1.8f;controller.radius=.38f;controller.center=Vector3.up*.9f;controller.stepOffset=.35f;
             GameObject model=LumiNarutoArt.Create(transform);motion=model.GetComponent<LumiInfantryMotion>();motion.Configure(game,true);
             path=new NavMeshPath();LumiChakraVisual.Burst(transform.parent,AimPoint,true);

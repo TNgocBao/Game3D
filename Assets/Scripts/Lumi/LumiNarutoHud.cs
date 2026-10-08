@@ -27,12 +27,18 @@ namespace LumiAdventure
             GameObject obj=new GameObject("Naruto skill controls",typeof(RectTransform));obj.transform.SetParent(hudPanel.transform,false);LumiFactory.Stretch(obj.GetComponent<RectTransform>());
             abilityHud=obj.AddComponent<LumiAbilityHud>();abilityHud.Build(this);
         }
-        private void BindNarutoHud(){hudPanel.transform.SetSiblingIndex(mobilePanel.transform.GetSiblingIndex()+1);abilityHud.Bind(Player.GetComponent<LumiNarutoSkills>());}
+        private void BindNarutoHud()
+        {
+            GameObject mobileRoot=mobileControlsView.Root;
+            if(mobileRoot!=null)hudPanel.transform.SetSiblingIndex(mobileRoot.transform.GetSiblingIndex()+1);
+            abilityHud.Bind(Player.GetComponent<LumiNarutoSkills>());
+        }
     }
     public sealed class LumiAbilityHud:MonoBehaviour
     {
         [SerializeField] private LumiGame game;[SerializeField] private LumiNarutoSkills skills;
         [SerializeField] private Image[] cooldown=new Image[4];[SerializeField] private TMP_Text[] counters=new TMP_Text[4];
+        [SerializeField] private TMP_Text[] controlHints=new TMP_Text[4];
         [SerializeField] private GameObject bossPanel;[SerializeField] private TMP_Text bossName;[SerializeField] private Image bossFill;
         private static Sprite circle;
         public static Sprite Circle
@@ -50,7 +56,7 @@ namespace LumiAdventure
         public void Build(LumiGame owner)
         {
             game=owner;Vector2[] positions={new Vector2(-140,150),new Vector2(-365,115),new Vector2(-355,315),new Vector2(-145,415)};
-            string[] names={"Phi tiêu","Rasengan","Rasenshuriken","Phân thân"};string[] keys={"CHUỘT","GIỮ Q","GIỮ R","F"};
+            string[] names={"Phi tiêu","Rasengan","Rasenshuriken","Phân thân"};
             Color[] colors={new Color(.97f,.57f,.12f),new Color(.12f,.65f,1),new Color(.35f,.87f,1),new Color(.85f,.75f,.54f)};
             for(int i=0;i<4;i++)
             {
@@ -63,10 +69,11 @@ namespace LumiAdventure
                 LumiFactory.Rect(icon.GetComponent<RectTransform>(),Vector2.one*.5f,Vector2.one*(size*.62f),Vector2.zero);LumiJutsuIcon graphic=icon.AddComponent<LumiJutsuIcon>();graphic.Kind=i;graphic.color=colors[i];graphic.raycastTarget=false;
                 cooldown[i]=LumiFactory.Image(face.transform,new Color(.01f,.02f,.04f,.83f));cooldown[i].sprite=Circle;cooldown[i].type=Image.Type.Filled;cooldown[i].fillMethod=Image.FillMethod.Radial360;cooldown[i].fillOrigin=2;LumiFactory.Stretch(cooldown[i].rectTransform);cooldown[i].raycastTarget=false;
                 counters[i]=LumiFactory.Text(face.transform,"",40,TextAnchor.MiddleCenter,Color.white);LumiFactory.Stretch(counters[i].rectTransform);
-                TMP_Text name=LumiFactory.Text(rim.transform,names[i],28,TextAnchor.MiddleCenter,Color.white);name.fontSize=28;name.enableWordWrapping=false;
+                int labelSize=22;
+                TMP_Text name=LumiFactory.Text(rim.transform,names[i],labelSize,TextAnchor.MiddleCenter,Color.white);name.fontSize=labelSize;name.enableWordWrapping=false;
                 LumiFactory.Rect(name.rectTransform,new Vector2(.5f,0),new Vector2(220,44),new Vector2(0,-30));
-                TMP_Text key=LumiFactory.Text(rim.transform,keys[i],24,TextAnchor.MiddleCenter,new Color(.84f,.9f,1));key.fontSize=24;
-                LumiFactory.Rect(key.rectTransform,new Vector2(.5f,1),new Vector2(120,38),new Vector2(0,20));
+                controlHints[i]=LumiFactory.Text(rim.transform,"",20,TextAnchor.MiddleCenter,new Color(.84f,.9f,1));
+                LumiFactory.Rect(controlHints[i].rectTransform,new Vector2(.5f,1),new Vector2(120,38),new Vector2(0,20));
             }
             bossPanel=LumiFactory.Image(transform,new Color(.025f,.04f,.07f,.85f)).gameObject;
             LumiFactory.Rect(bossPanel.GetComponent<RectTransform>(),new Vector2(.5f,1),new Vector2(640,100),new Vector2(0,-195));
@@ -74,6 +81,17 @@ namespace LumiAdventure
             Image track=LumiFactory.Image(bossPanel.transform,new Color(.18f,.08f,.08f));LumiFactory.Rect(track.rectTransform,new Vector2(.5f,.23f),new Vector2(580,13),Vector2.zero);track.raycastTarget=false;
             bossFill=LumiFactory.Image(track.transform,new Color(.95f,.23f,.16f));LumiFactory.Stretch(bossFill.rectTransform);bossFill.raycastTarget=false;bossFill.rectTransform.pivot=new Vector2(0,.5f);
             bossPanel.GetComponent<Image>().raycastTarget=false;bossPanel.SetActive(false);
+            ApplyControlScheme();
+        }
+        public void ApplyControlScheme()
+        {
+            if(game==null)return;
+            string[] hints=game.Controls.UsesMobileControls?new[]{"","GIỮ","GIỮ",""}:new[]{"CHUỘT","GIỮ Q","GIỮ R","F"};
+            for(int i=0;i<controlHints.Length;i++)if(controlHints[i]!=null)
+            {
+                controlHints[i].text=hints[i];
+                controlHints[i].fontSize=game.Controls.UsesMobileControls?20:24;
+            }
         }
         private void LateUpdate()
         {

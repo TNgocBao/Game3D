@@ -8,26 +8,28 @@ namespace LumiAdventure
     {
         private GameObject settingsPanel;
         private Slider masterControl,musicControl,effectsControl;
-        private Text masterPercent,musicPercent,effectsPercent,muteLabel;
+        private Text masterPercent,musicPercent,effectsPercent,muteLabel,controlModeLabel;
         private bool settingsResumesGame;
 
-        private void BuildAudioSettings()
+        private void BuildGameSettings()
         {
             settingsPanel=Panel("Audio Settings",new Color(.01f,.02f,.04f,.82f));
             settingsPanel.GetComponent<Image>().raycastTarget=true;
-            Image board=UiSurfacePanel(settingsPanel.transform,"Sound preferences",new Vector2(980,820),Vector2.zero,UiSurface);
-            UiLabel(board.transform,"CÀI ĐẶT ÂM THANH",46,Color.white,new Vector2(.5f,.88f),new Vector2(850,80),Vector2.zero,TextAnchor.MiddleCenter);
-            UiLabel(board.transform,"Điều chỉnh trực tiếp · Tự lưu khi đóng",26,new Color(.7f,.82f,.88f),new Vector2(.5f,.78f),new Vector2(850,45),Vector2.zero,TextAnchor.MiddleCenter);
-            masterControl=AudioSlider(board.transform,"Âm lượng tổng",.65f,v=>Audio.MasterVolume=v,out masterPercent);
-            musicControl=AudioSlider(board.transform,"Nhạc nền",.49f,v=>Audio.MusicVolume=v,out musicPercent);
-            effectsControl=AudioSlider(board.transform,"Hiệu ứng âm thanh",.33f,v=>Audio.EffectsVolume=v,out effectsPercent);
-            Button mute=UiAction(board.transform,"",new Vector2(820,60),new Vector2(0,-271),new Color(.12f,.155f,.22f),()=>{Audio.Muted=!Audio.Muted;UpdateMuteLabel();});
+            Image board=UiSurfacePanel(settingsPanel.transform,"Game preferences",new Vector2(980,920),Vector2.zero,UiSurface);
+            UiLabel(board.transform,"SETTING",46,Color.white,new Vector2(.5f,.91f),new Vector2(850,80),Vector2.zero,TextAnchor.MiddleCenter);
+            UiLabel(board.transform,"Điều khiển và âm thanh · Tự lưu",26,new Color(.7f,.82f,.88f),new Vector2(.5f,.83f),new Vector2(850,45),Vector2.zero,TextAnchor.MiddleCenter);
+            masterControl=AudioSlider(board.transform,"Âm lượng tổng",.70f,v=>Audio.MasterVolume=v,out masterPercent);
+            musicControl=AudioSlider(board.transform,"Nhạc nền",.57f,v=>Audio.MusicVolume=v,out musicPercent);
+            effectsControl=AudioSlider(board.transform,"Hiệu ứng âm thanh",.44f,v=>Audio.EffectsVolume=v,out effectsPercent);
+            Button controls=UiAction(board.transform,"",new Vector2(820,64),new Vector2(0,-238),new Color(.10f,.24f,.32f),()=>{Controls.Cycle();UpdateControlModeLabel();ApplyControlScheme();Audio.Play("ui");});
+            controlModeLabel=controls.GetComponentInChildren<Text>();
+            Button mute=UiAction(board.transform,"",new Vector2(820,60),new Vector2(0,-318),new Color(.12f,.155f,.22f),()=>{Audio.Muted=!Audio.Muted;UpdateMuteLabel();});
             muteLabel=mute.GetComponentInChildren<Text>();
             Button reset=UiAction(board.transform,"MẶC ĐỊNH",new Vector2(390,64),new Vector2(-215,-357),new Color(.12f,.155f,.22f),()=>{
-                Audio.MasterVolume=1;Audio.MusicVolume=.55f;Audio.EffectsVolume=.65f;Audio.Muted=false;RefreshAudioControls();Audio.Play("ui");});
-            LumiFactory.Rect(reset.GetComponent<RectTransform>(),new Vector2(.5f,.065f),new Vector2(390,64),new Vector2(-215,0));
-            Button close=UiAction(board.transform,"LƯU & ĐÓNG",new Vector2(390,64),new Vector2(215,-357),UiOrange,CloseAudioSettings);
-            LumiFactory.Rect(close.GetComponent<RectTransform>(),new Vector2(.5f,.065f),new Vector2(390,64),new Vector2(215,0));
+                Audio.MasterVolume=1;Audio.MusicVolume=.55f;Audio.EffectsVolume=.65f;Audio.Muted=false;Controls.SetMode(LumiControlMode.Auto);ApplyControlScheme();RefreshAudioControls();Audio.Play("ui");});
+            LumiFactory.Rect(reset.GetComponent<RectTransform>(),new Vector2(.5f,.055f),new Vector2(390,64),new Vector2(-215,0));
+            Button close=UiAction(board.transform,"LƯU & ĐÓNG",new Vector2(390,64),new Vector2(215,-357),UiOrange,CloseGameSettings);
+            LumiFactory.Rect(close.GetComponent<RectTransform>(),new Vector2(.5f,.055f),new Vector2(390,64),new Vector2(215,0));
             settingsPanel.SetActive(false);
         }
 
@@ -50,7 +52,7 @@ namespace LumiAdventure
             return slider;
         }
 
-        public void OpenAudioSettings()
+        public void OpenGameSettings()
         {
             if(state==GameState.Loading)return;
             settingsResumesGame=state==GameState.Playing;
@@ -59,12 +61,13 @@ namespace LumiAdventure
             Audio.Play("ui");
         }
         private void UpdateMuteLabel(){muteLabel.text=Audio.Muted?"ÂM THANH: ĐANG TẮT  ·  BẤM ĐỂ BẬT":"ÂM THANH: ĐANG BẬT  ·  BẤM ĐỂ TẮT";}
+        private void UpdateControlModeLabel(){controlModeLabel.text="KIỂU ĐIỀU KHIỂN: "+Controls.DisplayName+"  ·  BẤM ĐỂ ĐỔI";}
         private void RefreshAudioControls()
         {
             masterControl.SetValueWithoutNotify(Audio.MasterVolume);musicControl.SetValueWithoutNotify(Audio.MusicVolume);effectsControl.SetValueWithoutNotify(Audio.EffectsVolume);
-            masterPercent.text=Mathf.RoundToInt(Audio.MasterVolume*100)+"%";musicPercent.text=Mathf.RoundToInt(Audio.MusicVolume*100)+"%";effectsPercent.text=Mathf.RoundToInt(Audio.EffectsVolume*100)+"%";UpdateMuteLabel();
+            masterPercent.text=Mathf.RoundToInt(Audio.MasterVolume*100)+"%";musicPercent.text=Mathf.RoundToInt(Audio.MusicVolume*100)+"%";effectsPercent.text=Mathf.RoundToInt(Audio.EffectsVolume*100)+"%";UpdateMuteLabel();UpdateControlModeLabel();
         }
-        private void CloseAudioSettings()
+        private void CloseGameSettings()
         {
             Audio.SaveSettings();settingsPanel.SetActive(false);Audio.Play("ui");
             if(settingsResumesGame)ResumeGame();settingsResumesGame=false;

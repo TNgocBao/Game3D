@@ -28,7 +28,7 @@ public static class LumiStartupScene
         LumiFactory.Rect(titlePanel.rectTransform,new Vector2(.27f,.57f),new Vector2(820,330),Vector2.zero);titlePanel.raycastTarget=false;
         Text title=LumiFactory.Text(titlePanel.transform,"NARUTO",100,TextAnchor.MiddleCenter,Color.white);
         LumiFactory.Rect(title.rectTransform,new Vector2(.5f,.67f),new Vector2(780,150),Vector2.zero);
-        Text subtitle=LumiFactory.Text(titlePanel.transform,"HÀNH TRÌNH NGŨ ĐẠI NHẪN THÔN",32,TextAnchor.MiddleCenter,new Color(1f,.78f,.36f));
+        Text subtitle=LumiFactory.Text(titlePanel.transform,"HÀNH TRÌNH HOKAGE",32,TextAnchor.MiddleCenter,new Color(1f,.78f,.36f));
         LumiFactory.Rect(subtitle.rectTransform,new Vector2(.5f,.27f),new Vector2(780,90),Vector2.zero);
         Text hint=LumiFactory.Text(ui.transform,"Nhấn Play trong Unity để mở chiến dịch",28,TextAnchor.MiddleCenter,Color.white);
         LumiFactory.Rect(hint.rectTransform,new Vector2(.5f,.15f),new Vector2(1600,70),Vector2.zero);

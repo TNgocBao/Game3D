@@ -2,6 +2,8 @@ using UnityEngine;
 
 namespace LumiAdventure
 {
+    public enum LumiCameraMode { FirstPerson, FreeThirdPerson, MovementFollow }
+
     [DefaultExecutionOrder(-100)]
     public class LumiCameraRig : MonoBehaviour
     {
@@ -13,11 +15,13 @@ namespace LumiAdventure
         [SerializeField] private float yaw=0f;
         private Vector3 focus;
         private Vector2 mapSize;
-        private bool firstPerson=true;
+        [SerializeField] private LumiCameraMode mode=LumiCameraMode.FirstPerson;
         private LumiPlayerViewVisibility visibility;
-        public bool FirstPerson=>firstPerson;
+        public bool FirstPerson=>mode==LumiCameraMode.FirstPerson;
+        public bool MovementFacing=>mode==LumiCameraMode.MovementFollow;
+        public LumiCameraMode Mode=>mode;
         [SerializeField,Range(.1f,8f)] private float mouseSensitivity=2.5f;
-        public bool MouseLookActive=>!Application.isMobilePlatform && game!=null && game.IsPlaying && Application.isFocused && Cursor.lockState==CursorLockMode.Locked;
+        public bool MouseLookActive=>game!=null&&game.Controls.UsesPcControls&&game.IsPlaying&&Application.isFocused&&Cursor.lockState==CursorLockMode.Locked;
         public bool ReacquiredThisFrame {get;private set;}
         public float Yaw=>yaw;
         public float Pitch=>pitch;
@@ -48,10 +52,13 @@ namespace LumiAdventure
             gameObject.tag="MainCamera";
             gameObject.AddComponent<AudioListener>();
             visibility=target.GetComponent<LumiPlayerViewVisibility>();if(visibility==null)visibility=target.gameObject.AddComponent<LumiPlayerViewVisibility>();
-            visibility.Initialize();visibility.SetFirstPerson(firstPerson);
+            mode=(LumiCameraMode)Mathf.Clamp(PlayerPrefs.GetInt("Lumi.CameraMode",0),0,2);
+            visibility.Initialize();visibility.SetFirstPerson(FirstPerson);
+            LumiMobileInput.PointerAimEnabled=MovementFacing;
             focus=FocusPoint();
             transform.rotation=Quaternion.Euler(pitch,yaw,0f);
-            transform.position=firstPerson?EyePoint():focus-transform.forward*distance;
+            if(MovementFacing){yaw=target.eulerAngles.y;pitch=12f;}
+            transform.position=FirstPerson?EyePoint():focus-transform.forward*distance;
 
         }
 
@@ -59,21 +66,21 @@ namespace LumiAdventure
         {
             ReacquiredThisFrame=false;
             if(target==null || game==null || !game.IsPlaying || !Application.isFocused)return;
-            if(!Application.isMobilePlatform && Input.GetKeyDown(KeyCode.Tab))
+            if(Input.GetKeyDown(KeyCode.V)){CycleMode();return;}
+            if(game.Controls.UsesPcControls&&!MovementFacing&&Input.GetKeyDown(KeyCode.Tab))
                 game.SetMouseLook(Cursor.lockState!=CursorLockMode.Locked);
-            else if(!Application.isMobilePlatform && Cursor.lockState!=CursorLockMode.Locked && Input.GetMouseButtonDown(0) && !game.IsPointerOverUi())
+            else if(game.Controls.UsesPcControls&&!MovementFacing&&Cursor.lockState!=CursorLockMode.Locked&&Input.GetMouseButtonDown(0)&&!game.IsPointerOverUi())
             {
                 Vector3 pointer=Input.mousePosition;
                 if(pointer.x>=0 && pointer.x<Screen.width && pointer.y>=0 && pointer.y<Screen.height){game.SetMouseLook(true);ReacquiredThisFrame=true;}
             }
-            if(MouseLookActive && !ReacquiredThisFrame)
+            if(!MovementFacing && MouseLookActive && !ReacquiredThisFrame)
                 ApplyLookDelta(new Vector2(Input.GetAxisRaw("Mouse X"),Input.GetAxisRaw("Mouse Y")));
-            else if(Application.isMobilePlatform)ApplyLookDelta(LumiMobileInput.Look);
-            if(MouseLookActive || Application.isMobilePlatform)
+            else if(!MovementFacing&&game.Controls.UsesMobileControls)ApplyLookDelta(LumiMobileInput.Look);
+            if(!FirstPerson && !MovementFacing)distance=Mathf.Clamp(distance-Input.mouseScrollDelta.y*.65f,3.5f,9f);
+            if(Input.GetKeyDown(KeyCode.Home))
             {
-                if(!firstPerson)distance=Mathf.Clamp(distance-Input.mouseScrollDelta.y*.65f,3.5f,9f);
-                if(Input.GetKeyDown(KeyCode.V))SetFirstPerson(!firstPerson);
-                if(Input.GetKeyDown(KeyCode.Home)){yaw=0;pitch=0;distance=5.8f;SetFirstPerson(true);}
+                yaw=0;pitch=0;distance=5.8f;SetMode(LumiCameraMode.FirstPerson);
             }
         }
 
@@ -88,8 +95,13 @@ namespace LumiAdventure
         private void LateUpdate()
         {
             if (target == null || game == null) return;
-            if(firstPerson){transform.SetPositionAndRotation(EyePoint(),Quaternion.Euler(pitch,yaw,0));return;}
+            if(FirstPerson){transform.SetPositionAndRotation(EyePoint(),Quaternion.Euler(pitch,yaw,0));return;}
             focus=Vector3.Lerp(focus,FocusPoint(),1-Mathf.Exp(-7*Time.unscaledDeltaTime));
+            if(MovementFacing)
+            {
+                yaw=Mathf.LerpAngle(yaw,target.eulerAngles.y,1-Mathf.Exp(-12*Time.unscaledDeltaTime));
+                pitch=Mathf.Lerp(pitch,12f,1-Mathf.Exp(-8*Time.unscaledDeltaTime));
+            }
             Quaternion rotation=Quaternion.Euler(pitch,yaw,0f);
             Vector3 behind=-(rotation*Vector3.forward);
             float visibleDistance=distance;
@@ -110,10 +122,24 @@ namespace LumiAdventure
 
         public void SetFirstPerson(bool value)
         {
-            firstPerson=value;
-            if(visibility!=null)visibility.SetFirstPerson(value);
-            if(viewCamera!=null){viewCamera.nearClipPlane=value?.05f:.15f;viewCamera.fieldOfView=value?75:60;}
-            if(target!=null){focus=FocusPoint();transform.position=value?EyePoint():focus-transform.forward*distance;}
+            SetMode(value?LumiCameraMode.FirstPerson:LumiCameraMode.FreeThirdPerson,false);
+        }
+        public void CycleMode()
+        {
+            SetMode((LumiCameraMode)(((int)mode+1)%3),true);
+        }
+        public void SetMode(LumiCameraMode value,bool notify=true)
+        {
+            mode=value;bool first=FirstPerson;
+            if(MovementFacing){yaw=target!=null?target.eulerAngles.y:yaw;pitch=12f;distance=5.8f;game?.SetMouseLook(false);}
+            else if(game!=null&&game.IsPlaying)game.SetMouseLook(game.Controls.UsesPcControls);
+            LumiMobileInput.PointerAimEnabled=MovementFacing;
+            if(!MovementFacing)LumiMobileInput.HasAim=false;
+            if(visibility!=null)visibility.SetFirstPerson(first);
+            if(viewCamera!=null){viewCamera.nearClipPlane=first?.05f:.15f;viewCamera.fieldOfView=first?75:60;}
+            if(target!=null){focus=FocusPoint();transform.position=first?EyePoint():focus-Quaternion.Euler(pitch,yaw,0)*Vector3.forward*distance;}
+            PlayerPrefs.SetInt("Lumi.CameraMode",(int)mode);PlayerPrefs.Save();
+            if(notify&&game!=null)game.ShowToast(mode==LumiCameraMode.FirstPerson?"GÓC NHÌN: THỨ NHẤT":mode==LumiCameraMode.FreeThirdPerson?"GÓC NHÌN: THỨ BA TỰ DO":"GÓC NHÌN: THEO HƯỚNG DI CHUYỂN",new Color(.25f,.85f,1));
         }
         private Transform eyeSocket;
         public Vector3 EyePoint(){if(eyeSocket==null && target!=null){foreach(var child in target.GetComponentsInChildren<Transform>())if(child.name=="Eye camera socket"){eyeSocket=child;break;}}return (eyeSocket!=null?eyeSocket.position:target.position+Vector3.up*1.585f)+FlatForward*.06f;}

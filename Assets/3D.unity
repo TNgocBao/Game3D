@@ -427,7 +427,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "H\xC0NH TR\xCCNH NG\u0168 \u0110\u1EA0I NH\u1EAAN TH\xD4N"
+  m_text: "HÀNH TRÌNH HOKAGE"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6b18a6f942c25af49a4e5348b3c4034b, type: 2}
   m_sharedMaterial: {fileID: 2150692471850426253, guid: 6b18a6f942c25af49a4e5348b3c4034b, type: 2}

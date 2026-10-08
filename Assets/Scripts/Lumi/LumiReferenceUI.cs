@@ -80,22 +80,22 @@ namespace LumiAdventure
             Transform content=root.transform;
             Image side=UiSurfacePanel(content,"Navigation",new Vector2(330,984),new Vector2(-735,0),UiSurface);
             UiText(side.transform,"NARUTO",58,Color.white,new Vector2(270,90),new Vector2(0,382));
-            UiText(side.transform,"CHIBI ADVENTURE",24,UiOrange,new Vector2(270,55),new Vector2(0,315));
+            UiText(side.transform,"HÀNH TRÌNH HOKAGE",24,UiOrange,new Vector2(270,55),new Vector2(0,315));
             UiSurfacePanel(side.transform,"Divider",new Vector2(270,2),new Vector2(0,260),new Color(.15f,.18f,.25f));
             UiSurfacePanel(side.transform,"Active navigation",new Vector2(286,76),new Vector2(0,185),new Color(.18f,.115f,.09f));
             UiText(side.transform,"Hành trình",34,UiOrange,new Vector2(246,55),new Vector2(0,185));
             UiText(side.transform,"5 làng ninja",32,Color.white,new Vector2(270,55),new Vector2(0,79));
             UiText(side.transform,"Đã mở "+unlocked+" / 5 làng",28,UiMuted,new Vector2(270,55),new Vector2(0,22));
             UiText(side.transform,"ĐIỀU KHIỂN",28,UiMuted,new Vector2(270,55),new Vector2(0,-104));
-            string[] keys={"WASD","CHUỘT","Q / R / F","V / TAB"};
-            string[] actions={"Di chuyển","Nhìn / Ném","Nhẫn thuật","Góc nhìn / UI"};
+            string[] keys={"WASD","CHUỘT","Q / R / F","V / CAM"};
+            string[] actions={"Di chuyển / xoay","Ngắm / tấn công","Nhẫn thuật","Đổi góc nhìn"};
             for(int i=0;i<4;i++)
             {
                 float y=-168-i*62;
                 UiText(side.transform,keys[i],24,Color.white,new Vector2(122,50),new Vector2(-70,y));
                 UiText(side.transform,actions[i],24,UiMuted,new Vector2(160,50),new Vector2(68,y));
             }
-            UiAction(side.transform,"CÀI ĐẶT",new Vector2(270,68),new Vector2(0,-419),new Color(.12f,.155f,.22f),OpenAudioSettings);
+            UiAction(side.transform,"SETTING",new Vector2(270,68),new Vector2(0,-419),new Color(.12f,.155f,.22f),OpenGameSettings);
             UiText(content,"Hành trình ninja",48,Color.white,new Vector2(1100,85),new Vector2(170,427));
             UiText(content,"Chọn làng và sẵn sàng thi triển nhẫn thuật",30,UiMuted,new Vector2(1300,60),new Vector2(270,360));
             Image hero=UiSurfacePanel(content,"Selected village",new Vector2(1350,530),new Vector2(225,38),Color.white,true);
@@ -106,7 +106,7 @@ namespace LumiAdventure
             UiText(info.transform,VillageKages[selectedMission-1]+"  ·  "+VillageElements[selectedMission-1],30,UiMuted,new Vector2(790,60),new Vector2(-240,-35));
             bool playable=selectedMission<=unlocked;
             Button deploy=UiAction(info.transform,playable?"XUẤT PHÁT  ›":"CHƯA MỞ KHÓA",new Vector2(360,76),new Vector2(451,0),UiOrange,()=>BeginDeployment(selectedMission));deploy.interactable=playable;
-            UiText(content,"NGŨ ĐẠI NHẪN THÔN",28,UiMuted,new Vector2(1350,52),new Vector2(225,-274));
+            UiText(content,"CON ĐƯỜNG NHẪN GIẢ",28,UiMuted,new Vector2(1350,52),new Vector2(225,-274));
             for(int i=1;i<=5;i++)
             {
                 int mission=i;bool available=i<=unlocked;bool selected=i==selectedMission;
@@ -154,8 +154,8 @@ namespace LumiAdventure
             UiText(portrait.transform,LevelName(currentLevel),44,Color.white,new Vector2(370,120),new Vector2(0,-220));
             UiText(portrait.transform,VillageKages[currentLevel-1],30,Color.white,new Vector2(370,65),new Vector2(0,-300));
             Color accent=won?UiOrange:new Color(1f,.38f,.4f);
-            UiText(board.transform,won?"Hoàn thành!":"Thử lại nhé",52,Color.white,new Vector2(690,85),new Vector2(210,286));
-            UiText(board.transform,won?"Bạn đã vượt qua thử thách của Kage.":"Nghỉ một chút và chuẩn bị chiến thuật mới.",30,UiMuted,new Vector2(690,95),new Vector2(210,189));
+            UiText(board.transform,won?"Hoàn thành!":LevelTimer.Expired?"Hết thời gian!":"Thử lại nhé",52,Color.white,new Vector2(690,85),new Vector2(210,286));
+            UiText(board.transform,won?"Bạn đã vượt qua thử thách của Kage.":LevelTimer.Expired?"Mỗi màn có 15 phút. Hãy tiến nhanh hơn và hạ Kage.":"Nghỉ một chút và chuẩn bị chiến thuật mới.",30,UiMuted,new Vector2(690,95),new Vector2(210,189));
             UiText(board.transform,won?Stars(stars):"NHIỆM VỤ CHƯA HOÀN THÀNH",won?64:30,accent,new Vector2(690,100),new Vector2(210,80));
             for(int i=0;i<2;i++)
             {

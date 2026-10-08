@@ -238,6 +238,7 @@ namespace LumiAdventure
         {
             controller.enabled = false;
             game.RegisterKill(enemyType);
+            game.TryDropEnemySupportItem(transform.position);
             game.SpawnImpact(transform.position + Vector3.up, enemyType == LumiEnemyType.Golem
                 ? new Color(1f, 0.35f, 0.08f) : new Color(0.8f, 0.2f, 0.35f));
             float elapsed = 0f;
