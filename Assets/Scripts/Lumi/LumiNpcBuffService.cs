@@ -17,7 +17,8 @@ namespace LumiAdventure
         {
             CurrentBuff = (LumiBuffType)Random.Range(0, 3);
             Granted = false;
-            if (game.BuffStatusView != null) game.BuffStatusView.SetNpcOffer(CurrentBuff, true);
+            if (game.BuffStatusView != null) game.BuffStatusView.SetNpcOffer(CurrentBuff, false);
+            game.ShowToast("NPC đang chờ bạn: " + DisplayName(CurrentBuff), Accent(CurrentBuff));
         }
 
         public string TalkTo(LumiPlayer player)

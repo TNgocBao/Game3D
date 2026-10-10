@@ -29,7 +29,6 @@ namespace LumiAdventure
         private Text dialogueText;
         private Slider healthSlider;
         private Slider armorSlider;
-        private LumiDirectionArrow directionArrow;
         private LumiMenuBackdrop menuBackdrop;
         private Transform goal;
         private int currentLevel;
@@ -121,6 +120,16 @@ namespace LumiAdventure
 #endif
         private void StartLevelInternal(int level)
         {
+            PrepareLevel(level);
+            ClearWorld();
+            string villageScene=LumiVillageSceneMarker.SceneName(currentLevel);
+            if(SceneManager.GetActiveScene().name!=villageScene)
+                SceneManager.LoadScene(villageScene,LoadSceneMode.Single);
+            FinishLevelBuild();
+        }
+
+        private void PrepareLevel(int level)
+        {
             CloseDialogue();
             Time.timeScale = 1f;
             currentLevel = Mathf.Clamp(level, 1, 5);
@@ -132,12 +141,14 @@ namespace LumiAdventure
             totalStars = 5;
             for (int i = 0; i < kills.Length; i++) kills[i] = 0;
             LumiMobileInput.Reset();
-
-            ClearWorld();
             if (menuBackdrop != null) menuBackdrop.SetVisible(false);
             HideAllPanels();
             hudPanel.SetActive(true);
             mobileControlsView.SetVisible(Controls.UsesMobileControls);
+        }
+
+        private void FinishLevelBuild()
+        {
             BuildLevel(currentLevel);
             state = GameState.Playing;
             BindNarutoHud();
@@ -145,6 +156,40 @@ namespace LumiAdventure
             Audio.PlayLevelMusic(currentLevel);
             RefreshHud();
             ShowToast("VÙNG ĐẤT " + currentLevel + " — " + LevelName(currentLevel), LevelAccent(currentLevel));
+        }
+
+        private IEnumerator TransitionToLevel(int level)
+        {
+            if(!LumiProgressionRules.CanStartLevel(PlayerPrefs.GetInt("Lumi.Unlocked",1),level))yield break;
+            Camera loadingCamera=CreateLoadingCamera();
+            PrepareLevel(level);
+            ReleaseWorld();
+            // Destroy is deferred. Give Unity a frame, then release meshes/textures from the old village
+            // before loading and constructing the next one to avoid a mobile memory spike.
+            yield return null;
+            yield return Resources.UnloadUnusedAssets();
+            string villageScene=LumiVillageSceneMarker.SceneName(currentLevel);
+            if(SceneManager.GetActiveScene().name!=villageScene)
+            {
+                AsyncOperation load=SceneManager.LoadSceneAsync(villageScene,LoadSceneMode.Single);
+                while(load!=null&&!load.isDone)yield return null;
+            }
+            CreateWorld();
+            FinishLevelBuild();
+            if(loadingCamera!=null)Destroy(loadingCamera.gameObject);
+        }
+
+        private Camera CreateLoadingCamera()
+        {
+            GameObject cameraObject=new GameObject("Village transition camera");
+            cameraObject.transform.SetParent(transform,false);
+            Camera camera=cameraObject.AddComponent<Camera>();
+            camera.clearFlags=CameraClearFlags.SolidColor;
+            camera.backgroundColor=new Color(.01f,.02f,.04f,1f);
+            camera.cullingMask=0;
+            camera.depth=-100f;
+            camera.targetDisplay=0;
+            return camera;
         }
 
         public void PauseGame()
@@ -174,7 +219,6 @@ namespace LumiAdventure
             SetCursor(false);
             Audio.Play("lose");
             Audio.StopMusic();
-            SetDirectionArrow(false);
             BuildResult(false, 0);
         }
 
@@ -186,7 +230,6 @@ namespace LumiAdventure
             SetCursor(false);
             Audio.Play("win");
             Audio.StopMusic();
-            SetDirectionArrow(false);
 
             int stars = LumiProgressionRules.Rating(true,collectedStars,totalStars);
             string key = "Lumi.Level." + currentLevel + ".Stars";
@@ -231,7 +274,7 @@ namespace LumiAdventure
 
         public bool TryDropEnemySupportItem(Vector3 position)
         {
-            if(worldRoot==null||Random.value>=.5f)return false;
+            if(worldRoot==null||Random.value>=.25f)return false;
             LumiPickupType type=Random.value<.5f?LumiPickupType.Health:LumiPickupType.Armor;
             GameObject item=new GameObject("Quái rơi "+(type==LumiPickupType.Health?"Hồi máu":"Giáp"));
             item.transform.SetParent(worldRoot,false);
@@ -248,12 +291,6 @@ namespace LumiAdventure
             starText.text = "★ " + collectedStars + "/" + totalStars + "   ·   " + score;
             healthSlider.value = Player.Health / (float)LumiPlayer.MaxHealth;
             armorSlider.value = Player.Armor / (float)LumiPlayer.MaxArmor;
-        }
-
-        public void SetDirectionArrow(bool visible)
-        {
-            if (directionArrow != null && directionArrow.gameObject.activeSelf != visible)
-                directionArrow.gameObject.SetActive(visible);
         }
 
         public void ShowToast(string message, Color color)
@@ -351,7 +388,7 @@ namespace LumiAdventure
             BuildGameSettings();
 
             toastText = LumiFactory.Text(canvas.transform, string.Empty, 34, TextAnchor.MiddleCenter, Color.white);
-            LumiFactory.Rect(toastText.rectTransform, new Vector2(0.5f, 0.78f), new Vector2(900f, 70f), Vector2.zero);
+            LumiFactory.Rect(toastText.rectTransform, new Vector2(0.5f, 0.70f), new Vector2(900f, 70f), Vector2.zero);
             toastText.raycastTarget = false;
             toastText.gameObject.SetActive(false);
 
@@ -405,24 +442,25 @@ namespace LumiAdventure
             armorText.raycastTarget = false;
             armorSlider = CreateBar(status.transform, new Vector2(0f, -30f), new Color(0.3f, 0.78f, 1f));
 
-            starText = LumiFactory.Text(hudPanel.transform, "★ 0/5", 34, TextAnchor.MiddleCenter, new Color(1f, 0.82f, 0.08f));
-            LumiFactory.Rect(starText.rectTransform, new Vector2(0.5f, 0.94f), new Vector2(400f, 64f), Vector2.zero);
+            starText = LumiFactory.Text(hudPanel.transform, "★ 0/5", 30, TextAnchor.MiddleRight, new Color(1f, 0.82f, 0.08f));
+            LumiFactory.Rect(starText.rectTransform, new Vector2(1f, 1f), new Vector2(330f, 54f), new Vector2(-315f,-30f));
             starText.raycastTarget = false;
-            objectiveText = LumiFactory.Text(hudPanel.transform, "HẠ KAGE CUỐI LÀNG ĐỂ MỞ CỔNG", 22, TextAnchor.MiddleCenter, Color.white);
-            LumiFactory.Rect(objectiveText.rectTransform, new Vector2(0.5f, 0.885f), new Vector2(700f, 45f), Vector2.zero);
+            objectiveText = LumiFactory.Text(hudPanel.transform, "HẠ KAGE CUỐI LÀNG ĐỂ MỞ CỔNG", 21, TextAnchor.MiddleRight, Color.white);
+            LumiFactory.Rect(objectiveText.rectTransform, new Vector2(1f, 1f), new Vector2(540f, 42f), new Vector2(-450f,-86f));
             objectiveText.raycastTarget = false;
-            Text timerText=LumiFactory.Text(hudPanel.transform,"THỜI GIAN  15:00",24,TextAnchor.MiddleCenter,new Color(1f,.9f,.45f));
-            LumiFactory.Rect(timerText.rectTransform,new Vector2(.5f,.835f),new Vector2(420f,48f),Vector2.zero);timerText.raycastTarget=false;
+            Text timerText=LumiFactory.Text(hudPanel.transform,"THỜI GIAN  15:00",22,TextAnchor.MiddleRight,new Color(1f,.9f,.45f));
+            LumiFactory.Rect(timerText.rectTransform,new Vector2(1f,1f),new Vector2(300f,40f),new Vector2(-335f,-132f));timerText.raycastTarget=false;
             LevelTimer.BindDisplay(timerText);
             BuffStatusView=gameObject.AddComponent<LumiBuffStatusView>();
             BuffStatusView.Initialize(this,hudPanel.transform);
-            Button settings=LumiFactory.Button(hudPanel.transform,"SETTING",new Color(.12f,.22f,.28f,.95f),OpenGameSettings);
+            Button settings=LumiFactory.Button(hudPanel.transform,"ESC",new Color(.12f,.22f,.28f,.95f),OpenGameSettings);
             settings.gameObject.name="Setting";
             settings.image.sprite=LumiAbilityHud.Circle;
             settings.image.type=Image.Type.Simple;
             Text settingsLabel=settings.GetComponentInChildren<Text>();
             settingsLabel.fontSize=16;settingsLabel.alignment=TMPro.TextAlignmentOptions.Center;
             LumiFactory.Rect(settings.GetComponent<RectTransform>(),new Vector2(1,1),new Vector2(112,112),new Vector2(-75,-90));
+            settings.gameObject.AddComponent<LumiPcOnlyUi>().Initialize(this);
 
             Text crosshair = LumiFactory.Text(hudPanel.transform, "+", 36, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.85f));
             LumiFactory.Rect(crosshair.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(44f, 44f), Vector2.zero);
@@ -478,10 +516,15 @@ namespace LumiAdventure
         private void BuildDialoguePanel()
         {
             dialoguePanel = LumiFactory.Image(canvas.transform, new Color(0.025f, 0.05f, 0.09f, 0.94f)).gameObject;
-            LumiFactory.Rect(dialoguePanel.GetComponent<RectTransform>(), new Vector2(0.5f, 0.13f), new Vector2(1100f, 170f), Vector2.zero);
-            dialogueText = LumiFactory.Text(dialoguePanel.transform, string.Empty, 28, TextAnchor.MiddleLeft, Color.white);
+            LumiFactory.Rect(dialoguePanel.GetComponent<RectTransform>(), new Vector2(0.5f, 0.12f), new Vector2(1220f, 205f), Vector2.zero);
+            dialogueText = LumiFactory.Text(dialoguePanel.transform, string.Empty, 25, TextAnchor.MiddleLeft, Color.white);
             LumiFactory.Stretch(dialogueText.rectTransform, 35f);
             dialogueText.richText = true;
+            dialogueText.enableWordWrapping = true;
+            dialogueText.enableAutoSizing = true;
+            dialogueText.fontSizeMin = 17f;
+            dialogueText.fontSizeMax = 25f;
+            dialogueText.overflowMode = TMPro.TextOverflowModes.Truncate;
             dialogueText.raycastTarget = false;
             dialogueText.rectTransform.offsetMax=new Vector2(-80f,-35f);
             Button close=LumiFactory.Button(dialoguePanel.transform,"×",new Color(.2f,.28f,.3f),CloseDialogue);
@@ -569,15 +612,26 @@ namespace LumiAdventure
 
         private void ClearWorld()
         {
+            ReleaseWorld();
+            CreateWorld();
+        }
+
+        private void ReleaseWorld()
+        {
             Player = null;
             CameraRig = null;
-            directionArrow = null;
             goal = null;
             if (worldRoot != null)
             {
                 worldRoot.gameObject.SetActive(false);
                 Destroy(worldRoot.gameObject);
             }
+            worldRoot = null;
+            transientPool = null;
+        }
+
+        private void CreateWorld()
+        {
             worldRoot = new GameObject("Lumi World").transform;
             worldRoot.SetParent(transform, false);
             transientPool = worldRoot.gameObject.AddComponent<LumiTransientPool>();

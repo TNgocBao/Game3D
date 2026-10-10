@@ -74,8 +74,8 @@ public static class LumiNpcBuffValidation
         int shieldIcons=shield==null?0:shield.GetComponentsInChildren<SpriteRenderer>(true).Length;
         if(shieldIcons!=4)errors.Add("Armor formation is not four shield icons: "+shieldIcons);
 
-        bool setting=false;foreach(TMP_Text text in game.GetComponentsInChildren<TMP_Text>(true))if(text.text=="SETTING")setting=true;
-        if(!setting)errors.Add("SETTING label missing");
+        bool setting=false;foreach(TMP_Text text in game.GetComponentsInChildren<TMP_Text>(true))if(text.text=="ESC")setting=true;
+        if(!setting)errors.Add("ESC settings label missing");
         int activeBuffIcons=0;foreach(Transform child in game.GetComponentsInChildren<Transform>(true))if(child.name.StartsWith("Active buff")&&child.gameObject.activeInHierarchy)activeBuffIcons++;
         if(activeBuffIcons<3)errors.Add("Timed buff HUD did not show active icons");
 

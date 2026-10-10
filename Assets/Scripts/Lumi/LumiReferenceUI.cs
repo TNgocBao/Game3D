@@ -87,8 +87,9 @@ namespace LumiAdventure
             UiText(side.transform,"5 làng ninja",32,Color.white,new Vector2(270,55),new Vector2(0,79));
             UiText(side.transform,"Đã mở "+unlocked+" / 5 làng",28,UiMuted,new Vector2(270,55),new Vector2(0,22));
             UiText(side.transform,"ĐIỀU KHIỂN",28,UiMuted,new Vector2(270,55),new Vector2(0,-104));
-            string[] keys={"WASD","CHUỘT","Q / R / F","V / CAM"};
-            string[] actions={"Di chuyển / xoay","Ngắm / tấn công","Nhẫn thuật","Đổi góc nhìn"};
+            bool mobile=Controls!=null&&Controls.UsesMobileControls;
+            string[] keys=mobile?new[]{"JOYSTICK","GIỮ SKILL","ĐỔI / TẮT","NÓI / CAM / MENU"}:new[]{"WASD / CHUỘT","C / R / F","Q / G","E / V / ESC"};
+            string[] actions=mobile?new[]{"Di chuyển","Vuốt để ngắm","Khóa mục tiêu","Tương tác / giao diện"}:new[]{"Di chuyển / ngắm","Ba nhẫn thuật","Đổi / bật khóa","NPC / camera / menu"};
             for(int i=0;i<4;i++)
             {
                 float y=-168-i*62;
@@ -138,7 +139,7 @@ namespace LumiAdventure
             Image track=UiSurfacePanel(info.transform,"Loading track",new Vector2(1580,8),new Vector2(0,-77),new Color(.15f,.18f,.25f));
             Image fill=LumiFactory.Image(track.transform,UiOrange);fill.raycastTarget=false;fill.rectTransform.pivot=new Vector2(0,.5f);fill.rectTransform.anchorMin=fill.rectTransform.anchorMax=new Vector2(0,.5f);fill.rectTransform.sizeDelta=new Vector2(158,8);
             yield return null;fill.rectTransform.sizeDelta=new Vector2(553,8);yield return null;
-            StartLevel(level);state=GameState.Loading;loadingPanel.transform.SetAsLastSibling();fill.rectTransform.sizeDelta=new Vector2(1580,8);yield return null;
+            yield return StartCoroutine(TransitionToLevel(level));state=GameState.Loading;loadingPanel.transform.SetAsLastSibling();fill.rectTransform.sizeDelta=new Vector2(1580,8);yield return null;
             CanvasGroup fade=loadingPanel.AddComponent<CanvasGroup>();float elapsed=0;
             while(elapsed<.35f){elapsed+=Time.unscaledDeltaTime;fade.alpha=1-Mathf.Clamp01(elapsed/.35f);yield return null;}
             Destroy(loadingPanel);loadingPanel=null;deploying=false;state=GameState.Playing;

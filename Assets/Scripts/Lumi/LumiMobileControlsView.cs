@@ -54,11 +54,10 @@ namespace LumiAdventure
             LumiVirtualJoystick joystickInput = joystick.gameObject.AddComponent<LumiVirtualJoystick>();
             joystickInput.Knob = knob.rectTransform;
 
-            CreateActionButton("NHẢY", new Vector2(1f, 0f), new Vector2(-520f, 115f), new Color(.1f, .7f, .82f, .86f), LumiMobileAction.Jump);
             interactButton = CreateActionButton("NÓI", new Vector2(1f, 0f), new Vector2(-520f, 280f), new Color(.55f, .35f, .82f, .86f), LumiMobileAction.Interact);
             interactButton.SetActive(false);
-            CreateActionButton("MENU", new Vector2(1f, 1f), new Vector2(-205f, -90f), new Color(.11f, .18f, .28f, .9f), LumiMobileAction.Menu, 112f);
-            CreateActionButton("CAM", new Vector2(0f, 1f), new Vector2(120f, -285f), new Color(.08f, .42f, .72f, .88f), LumiMobileAction.Camera, 112f);
+            CreateActionButton("MENU", new Vector2(1f, 1f), new Vector2(-68f, -78f), new Color(.11f, .18f, .28f, .9f), LumiMobileAction.Menu, 112f);
+            CreateActionButton("CAM", new Vector2(0f, 1f), new Vector2(62f, -285f), new Color(.08f, .42f, .72f, .88f), LumiMobileAction.Camera, 112f);
         }
 
         private GameObject CreateActionButton(string label, Vector2 anchor, Vector2 position, Color color, LumiMobileAction action, float size = 135f)

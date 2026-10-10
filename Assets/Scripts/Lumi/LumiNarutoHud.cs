@@ -39,6 +39,9 @@ namespace LumiAdventure
         [SerializeField] private LumiGame game;[SerializeField] private LumiNarutoSkills skills;
         [SerializeField] private Image[] cooldown=new Image[4];[SerializeField] private TMP_Text[] counters=new TMP_Text[4];
         [SerializeField] private TMP_Text[] controlHints=new TMP_Text[4];
+        [SerializeField] private TMP_Text targetToggleLabel;
+        [SerializeField] private TMP_Text targetCycleLabel;
+        [SerializeField] private Image targetToggleFace;
         [SerializeField] private GameObject bossPanel;[SerializeField] private TMP_Text bossName;[SerializeField] private Image bossFill;
         private static Sprite circle;
         public static Sprite Circle
@@ -51,16 +54,16 @@ namespace LumiAdventure
             }
         }
         public void Bind(LumiNarutoSkills target){skills=target;}
-        public void BeginHold(int ability){if(skills!=null)skills.BeginCharge(ability);}
-        public void EndHold(int ability){if(skills!=null)skills.ReleaseCharge(ability);}
+        public void BeginHold(int ability){LumiMobileInput.SkillAimActive=true;LumiMobileInput.SkillAimDragged=false;if(skills!=null)skills.BeginCharge(ability);}
+        public void EndHold(int ability){if(skills!=null)skills.ReleaseCharge(ability);LumiMobileInput.SkillAimActive=false;LumiMobileInput.SkillAimDragged=false;}
         public void Build(LumiGame owner)
         {
-            game=owner;Vector2[] positions={new Vector2(-140,150),new Vector2(-365,115),new Vector2(-355,315),new Vector2(-145,415)};
+            game=owner;Vector2[] positions={new Vector2(-155,170),new Vector2(-405,125),new Vector2(-385,400),new Vector2(-155,485)};
             string[] names={"Phi tiêu","Rasengan","Rasenshuriken","Phân thân"};
             Color[] colors={new Color(.97f,.57f,.12f),new Color(.12f,.65f,1),new Color(.35f,.87f,1),new Color(.85f,.75f,.54f)};
             for(int i=0;i<4;i++)
             {
-                int ability=i;float size=i==0?160:120;
+                int ability=i;float size=i==0?220:156;
                 Image rim=LumiFactory.Image(transform,colors[i]);rim.sprite=Circle;LumiFactory.Rect(rim.rectTransform,new Vector2(1,0),Vector2.one*(size+9),positions[i]);rim.raycastTarget=false;
                 Image face=LumiFactory.Image(rim.transform,new Color(.025f,.07f,.13f,.96f));face.sprite=Circle;LumiFactory.Rect(face.rectTransform,Vector2.one*.5f,Vector2.one*size,Vector2.zero);
                 Button button=face.gameObject.AddComponent<Button>();button.targetGraphic=face;if(i==1 || i==2){var hold=face.gameObject.AddComponent<LumiJutsuHoldButton>();hold.Hud=this;hold.Ability=i;}
@@ -69,29 +72,43 @@ namespace LumiAdventure
                 LumiFactory.Rect(icon.GetComponent<RectTransform>(),Vector2.one*.5f,Vector2.one*(size*.62f),Vector2.zero);LumiJutsuIcon graphic=icon.AddComponent<LumiJutsuIcon>();graphic.Kind=i;graphic.color=colors[i];graphic.raycastTarget=false;
                 cooldown[i]=LumiFactory.Image(face.transform,new Color(.01f,.02f,.04f,.83f));cooldown[i].sprite=Circle;cooldown[i].type=Image.Type.Filled;cooldown[i].fillMethod=Image.FillMethod.Radial360;cooldown[i].fillOrigin=2;LumiFactory.Stretch(cooldown[i].rectTransform);cooldown[i].raycastTarget=false;
                 counters[i]=LumiFactory.Text(face.transform,"",40,TextAnchor.MiddleCenter,Color.white);LumiFactory.Stretch(counters[i].rectTransform);
-                int labelSize=22;
+                int labelSize=20;
                 TMP_Text name=LumiFactory.Text(rim.transform,names[i],labelSize,TextAnchor.MiddleCenter,Color.white);name.fontSize=labelSize;name.enableWordWrapping=false;
-                LumiFactory.Rect(name.rectTransform,new Vector2(.5f,0),new Vector2(220,44),new Vector2(0,-30));
-                controlHints[i]=LumiFactory.Text(rim.transform,"",20,TextAnchor.MiddleCenter,new Color(.84f,.9f,1));
-                LumiFactory.Rect(controlHints[i].rectTransform,new Vector2(.5f,1),new Vector2(120,38),new Vector2(0,20));
+                LumiFactory.Rect(name.rectTransform,new Vector2(.5f,0),new Vector2(220,24),new Vector2(0,-10));
+                controlHints[i]=LumiFactory.Text(rim.transform,"",18,TextAnchor.MiddleCenter,new Color(.84f,.9f,1));
+                LumiFactory.Rect(controlHints[i].rectTransform,new Vector2(.5f,1),new Vector2(120,22),new Vector2(0,4));
             }
-            bossPanel=LumiFactory.Image(transform,new Color(.025f,.04f,.07f,.85f)).gameObject;
-            LumiFactory.Rect(bossPanel.GetComponent<RectTransform>(),new Vector2(.5f,1),new Vector2(640,100),new Vector2(0,-195));
-            bossName=LumiFactory.Text(bossPanel.transform,"",32,TextAnchor.MiddleCenter,Color.white);LumiFactory.Rect(bossName.rectTransform,new Vector2(.5f,.68f),new Vector2(610,48),Vector2.zero);
-            Image track=LumiFactory.Image(bossPanel.transform,new Color(.18f,.08f,.08f));LumiFactory.Rect(track.rectTransform,new Vector2(.5f,.23f),new Vector2(580,13),Vector2.zero);track.raycastTarget=false;
+            CreateTargetButton("ĐỔI",new Vector2(-210,750),new Color(.92f,.7f,.18f),()=>game.Player?.Targeting?.Cycle(),out _,out targetCycleLabel);
+            CreateTargetButton("TẮT",new Vector2(-100,750),new Color(.9f,.28f,.18f),()=>game.Player?.Targeting?.Toggle(),out targetToggleFace,out targetToggleLabel);
+            bossPanel=LumiFactory.Image(transform,Color.clear).gameObject;
+            LumiFactory.Rect(bossPanel.GetComponent<RectTransform>(),new Vector2(.5f,1),new Vector2(660,78),new Vector2(0,-135));
+            bossName=LumiFactory.Text(bossPanel.transform,"",28,TextAnchor.MiddleCenter,Color.white);LumiFactory.Rect(bossName.rectTransform,new Vector2(.5f,.72f),new Vector2(640,38),Vector2.zero);
+            Image track=LumiFactory.Image(bossPanel.transform,new Color(.18f,.08f,.08f,.82f));LumiFactory.Rect(track.rectTransform,new Vector2(.5f,.16f),new Vector2(600,14),Vector2.zero);track.raycastTarget=false;
             bossFill=LumiFactory.Image(track.transform,new Color(.95f,.23f,.16f));LumiFactory.Stretch(bossFill.rectTransform);bossFill.raycastTarget=false;bossFill.rectTransform.pivot=new Vector2(0,.5f);
             bossPanel.GetComponent<Image>().raycastTarget=false;bossPanel.SetActive(false);
             ApplyControlScheme();
         }
+        private void CreateTargetButton(string label,Vector2 position,Color rimColor,System.Action action,out Image face,out TMP_Text text)
+        {
+            const float rimSize=96f,faceSize=84f;
+            Image rim=LumiFactory.Image(transform,rimColor);rim.sprite=Circle;
+            LumiFactory.Rect(rim.rectTransform,new Vector2(1,0),Vector2.one*rimSize,position);rim.raycastTarget=false;
+            face=LumiFactory.Image(rim.transform,new Color(.035f,.055f,.075f,.97f));face.sprite=Circle;
+            LumiFactory.Rect(face.rectTransform,Vector2.one*.5f,Vector2.one*faceSize,Vector2.zero);
+            Button button=face.gameObject.AddComponent<Button>();button.targetGraphic=face;button.onClick.AddListener(()=>action());
+            text=LumiFactory.Text(face.transform,label,18,TextAnchor.MiddleCenter,Color.white);LumiFactory.Stretch(text.rectTransform,6f);
+            text.enableAutoSizing=true;text.fontSizeMin=12;text.fontSizeMax=18;text.enableWordWrapping=false;text.raycastTarget=false;
+        }
         public void ApplyControlScheme()
         {
             if(game==null)return;
-            string[] hints=game.Controls.UsesMobileControls?new[]{"","GIỮ","GIỮ",""}:new[]{"CHUỘT","GIỮ Q","GIỮ R","F"};
+            string[] hints=game.Controls.UsesMobileControls?new[]{"","GIỮ","GIỮ",""}:new[]{"CHUỘT","GIỮ C","GIỮ R","F"};
             for(int i=0;i<controlHints.Length;i++)if(controlHints[i]!=null)
             {
                 controlHints[i].text=hints[i];
-                controlHints[i].fontSize=game.Controls.UsesMobileControls?20:24;
+                controlHints[i].fontSize=game.Controls.UsesMobileControls?18:20;
             }
+            if(targetCycleLabel!=null)targetCycleLabel.text=game.Controls.UsesMobileControls?"ĐỔI":"ĐỔI\nQ";
         }
         private void LateUpdate()
         {
@@ -104,13 +121,21 @@ namespace LumiAdventure
                 counters[i].text=charging?skills.ChargeMultiplier.ToString("0.0")+"×":remaining>.05f?Mathf.CeilToInt(remaining).ToString():"";
             }
             LumiVillageBoss boss=game.VillageBoss;bool visible=boss!=null && boss.Engaged;bossPanel.SetActive(visible);
-            if(visible){bossName.text=boss.BossName+"  •  "+boss.Element;bossFill.rectTransform.anchorMax=new Vector2(boss.HealthFraction,1);}
+            if(visible){bossName.text=boss.BossName+"  "+Mathf.CeilToInt(boss.HealthFraction*boss.MaxHealth)+"/"+boss.MaxHealth;bossFill.rectTransform.anchorMax=new Vector2(boss.HealthFraction,1);}
+            if(targetToggleLabel!=null&&game.Player!=null&&game.Player.Targeting!=null)
+            {
+                bool enabled=game.Player.Targeting.AutoEnabled;
+                string state=enabled?"TẮT":"BẬT";
+                targetToggleLabel.text=game.Controls.UsesMobileControls?state:state+"\nG";
+                targetToggleFace.color=enabled?new Color(.38f,.07f,.04f,.98f):new Color(.04f,.28f,.12f,.98f);
+            }
         }
     }
-    public sealed class LumiJutsuHoldButton:MonoBehaviour,IPointerDownHandler,IPointerUpHandler
+    public sealed class LumiJutsuHoldButton:MonoBehaviour,IPointerDownHandler,IPointerUpHandler,IDragHandler
     {
         public LumiAbilityHud Hud;public int Ability;
-        public void OnPointerDown(PointerEventData data){Hud.BeginHold(Ability);}
+        public void OnPointerDown(PointerEventData data){LumiMobileInput.AimScreenPoint=data.position;LumiMobileInput.HasAim=true;Hud.BeginHold(Ability);}
+        public void OnDrag(PointerEventData data){LumiMobileInput.SkillAimDragged=true;LumiMobileInput.AimScreenPoint=data.position;LumiMobileInput.HasAim=true;}
         public void OnPointerUp(PointerEventData data){Hud.EndHold(Ability);}
         private void OnDisable(){if(Hud!=null)Hud.EndHold(Ability);}
     }

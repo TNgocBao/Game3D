@@ -89,7 +89,7 @@ namespace LumiAdventure
         {
             if (other.GetComponentInParent<LumiPlayer>() == null) return;
             nearby = true;
-            game.ShowInteractionPrompt((game.Controls.UsesMobileControls?"Chạm NÓI để nói chuyện với ":"Nhấn E để nói chuyện với ") + speaker);
+            game.ShowInteractionPrompt(game.Controls.UsesMobileControls?"Chạm NÓI để nói chuyện với NPC":"Nhấn E để nói chuyện với NPC");
         }
 
         private void OnTriggerExit(Collider other)

@@ -10,7 +10,6 @@ namespace LumiAdventure
     {
         private const int Size = 96;
         private static readonly Dictionary<LumiIconKind, Sprite> Cache = new Dictionary<LumiIconKind, Sprite>();
-        private static Sprite shieldEmblem;
 
         public static Sprite Get(LumiIconKind kind)
         {
@@ -37,23 +36,6 @@ namespace LumiAdventure
             sprite.name = kind + " Icon";
             Cache[kind] = sprite;
             return sprite;
-        }
-
-        public static Sprite GetShieldEmblem()
-        {
-            if(shieldEmblem!=null)return shieldEmblem;
-            Texture2D texture=new Texture2D(Size,Size,TextureFormat.RGBA32,false);
-            texture.name="Lumi shield emblem";texture.filterMode=FilterMode.Bilinear;texture.wrapMode=TextureWrapMode.Clamp;
-            Color[] pixels=new Color[Size*Size];Color edge=new Color(.25f,.78f,1f,.92f),fill=new Color(.78f,.96f,1f,.72f);
-            for(int y=0;y<Size;y++)for(int x=0;x<Size;x++)
-            {
-                Vector2 p=new Vector2((x+.5f)/Size*2-1,(y+.5f)/Size*2-1);
-                bool outer=ShieldShape(p,.64f,.66f),inner=ShieldShape(p,.48f,.52f);
-                pixels[y*Size+x]=inner?fill:outer?edge:Color.clear;
-            }
-            texture.SetPixels(pixels);texture.Apply(false,true);
-            shieldEmblem=Sprite.Create(texture,new Rect(0,0,Size,Size),Vector2.one*.5f,100);shieldEmblem.name="Shield Emblem";
-            return shieldEmblem;
         }
 
         public static LumiIconKind FromPickup(LumiPickupType type)
@@ -128,13 +110,6 @@ namespace LumiAdventure
             }
         }
 
-        private static bool ShieldShape(Vector2 p,float halfWidth,float height)
-        {
-            if(p.y>.62f||p.y<-.72f)return false;
-            float normalized=Mathf.InverseLerp(-.72f,.52f,p.y);
-            float width=Mathf.Lerp(.05f,halfWidth,Mathf.Pow(normalized,.56f));
-            return Mathf.Abs(p.x)<width&&p.y<height;
-        }
     }
 
     public sealed class LumiWorldIconBillboard : MonoBehaviour

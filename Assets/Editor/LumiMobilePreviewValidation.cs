@@ -69,7 +69,7 @@ public static class LumiMobilePreviewValidation
             details+="\n"+button.Action+" @ "+rect.anchoredPosition+" sprite="+(image!=null&&image.sprite!=null);
         }
         foreach(TMP_Text label in game.GetComponentsInChildren<TMP_Text>(true))
-            if(label.text=="CHẠM"||label.text=="CHUỘT"||label.text=="GIỮ Q"||label.text=="GIỮ R")details+="\nSkill label: "+label.text;
+            if(label.text=="CHẠM"||label.text=="CHUỘT"||label.text=="GIỮ C"||label.text=="GIỮ R")details+="\nSkill label: "+label.text;
         LumiMobileActionButton interact=null;
         foreach(LumiMobileActionButton button in actionButtons)if(button.Action==LumiMobileAction.Interact)interact=button;
         bool talkHiddenAway=interact!=null&&!interact.gameObject.activeSelf;

@@ -46,7 +46,7 @@ public static class LumiGameplayBalanceValidation
         if(game.LevelTimer==null||Mathf.Abs(game.LevelTimer.RemainingSeconds-LumiLevelTimer.DefaultDurationSeconds)>1f)
             errors.Add("Level timer did not start at 15 minutes");
         if(LumiPlayer.MaxHealth!=20||game.Player.Health!=20)errors.Add("Player health is not 20/20");
-        if(LumiPlayer.MaxArmor!=20||game.Player.Armor!=20)errors.Add("Player armor is not 20/20");
+        if(LumiPlayer.MaxArmor!=20||game.Player.Armor!=10)errors.Add("Player starting armor is not 10/20");
 
         GameObject cloneObject=new GameObject("Clone speed QA",typeof(CharacterController));
         LumiShadowClone clone=cloneObject.AddComponent<LumiShadowClone>();clone.Initialize(game,game.Player,10);

@@ -31,7 +31,8 @@ namespace LumiAdventure
             RenderSettings.fogStartDistance = level==5?18f:45f;
             RenderSettings.fogEndDistance = level==5?65f:140f;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.Lerp(config.Sky,new Color(.65f,.62f,.55f),.7f)*.75f;
+            float mood = (level == 3 || level == 5) ? .62f : .75f;
+            RenderSettings.ambientLight = Color.Lerp(config.Sky,new Color(.65f,.62f,.55f),.7f)*mood;
 
             BuildLighting(config, level);
             BuildBoundaries(config);
@@ -57,11 +58,6 @@ namespace LumiAdventure
             goalObject.AddComponent<LumiGoal>().Initialize(this, config.Accent);
             goal = goalObject.transform;
 
-            GameObject arrowObject = new GameObject("Mũi tên chỉ đường");
-            arrowObject.transform.SetParent(worldRoot, false);
-            directionArrow = arrowObject.AddComponent<LumiDirectionArrow>();
-            directionArrow.Initialize(Player.transform, goal);
-
             SpawnVillageBoss(level,config);
             SpawnEnemies(config);
             SpawnStars(config);
@@ -77,7 +73,7 @@ namespace LumiAdventure
             var light = lightObject.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = Color.Lerp(Color.white, config.Accent, 0.08f);
-            light.intensity = level == 3 ? 0.9f : 1.15f;
+            light.intensity = level == 3 || level == 5 ? 0.92f : 1.15f;
             light.shadows = LightShadows.Soft;
             light.shadowStrength = 0.72f;
             // Soft opposing portrait lights keep the chibi face readable as the player turns.
@@ -247,6 +243,16 @@ namespace LumiAdventure
             Collider collider = hazard.GetComponent<Collider>();
             collider.isTrigger = true;
             hazard.AddComponent<LumiHazard>();
+        }
+
+        private void CreateMistZone(Vector3 position, Vector3 scale)
+        {
+            GameObject zone = new GameObject("Mist visibility zone", typeof(BoxCollider), typeof(LumiMistZone));
+            zone.transform.SetParent(worldRoot, false);
+            zone.transform.position = position + Vector3.up * 2.5f;
+            BoxCollider collider = zone.GetComponent<BoxCollider>();
+            collider.isTrigger = true;
+            collider.size = scale;
         }
 
         private static LevelConfig GetLevelConfig(int level)

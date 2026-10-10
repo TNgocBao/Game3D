@@ -12,7 +12,7 @@ namespace LumiAdventure
         [SerializeField,Range(.1f,.55f)] private float strideReach=.32f;
         [SerializeField,Range(.04f,.25f)] private float footLift=.13f;
         [SerializeField,Range(4,25)] private float poseResponse=12;
-        [SerializeField,Range(.08f,.22f)] private float idleFootSeparation=.19f;
+        [SerializeField,Range(.08f,.22f)] private float idleFootSeparation=.14f;
         private float phase,blend,castStart,castDuration,landStart=-10,hitUntil,holdStart;
         private float leftThighLength,leftCalfLength,rightThighLength,rightCalfLength;
         private Vector3 leftFootRest,rightFootRest,moveDirection=Vector3.forward;

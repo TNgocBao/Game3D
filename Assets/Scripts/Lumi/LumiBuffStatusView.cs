@@ -5,7 +5,7 @@ using Text = TMPro.TextMeshProUGUI;
 
 namespace LumiAdventure
 {
-    /// <summary>Presents the NPC offer by the health panel and timed buffs beside CAM.</summary>
+    /// <summary>Presents timed buff icons beside the mobile camera control.</summary>
     public sealed class LumiBuffStatusView : MonoBehaviour
     {
         private sealed class Slot
@@ -47,6 +47,7 @@ namespace LumiAdventure
             for (int i = 0; i < slots.Length; i++)
             {
                 bool visible = i < active.Count;
+                if (slots[i] == null || slots[i].Root == null) continue;
                 slots[i].Root.SetActive(visible);
                 if (!visible) continue;
                 LumiActiveBuff buff = active[i];
@@ -79,7 +80,7 @@ namespace LumiAdventure
                 Image panel = LumiFactory.Image(hudRoot, new Color(.025f, .06f, .1f, .92f));
                 panel.gameObject.name = "Active buff " + i;
                 panel.sprite = LumiAbilityHud.Circle; panel.type = Image.Type.Simple;
-                LumiFactory.Rect(panel.rectTransform, new Vector2(0f, 1f), new Vector2(82f, 82f), new Vector2(215f + i * 92f, -285f));
+            LumiFactory.Rect(panel.rectTransform, new Vector2(0f, 1f), new Vector2(82f, 82f), new Vector2(245f + i * 92f, -285f));
                 panel.raycastTarget = false;
                 Image icon = LumiFactory.Image(panel.transform, Color.white);
                 LumiFactory.Rect(icon.rectTransform, new Vector2(.5f, .58f), new Vector2(57f, 57f), Vector2.zero);

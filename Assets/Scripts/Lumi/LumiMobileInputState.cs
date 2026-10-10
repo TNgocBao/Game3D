@@ -10,6 +10,8 @@ namespace LumiAdventure
         public static Vector2 AimScreenPoint;
         public static bool HasAim;
         public static bool PointerAimEnabled;
+        public static bool SkillAimActive;
+        public static bool SkillAimDragged;
         private static bool jump;
         private static bool interact;
 
@@ -25,6 +27,8 @@ namespace LumiAdventure
             AimScreenPoint = Vector2.zero;
             HasAim = false;
             PointerAimEnabled = false;
+            SkillAimActive = false;
+            SkillAimDragged = false;
             jump = interact = false;
         }
     }

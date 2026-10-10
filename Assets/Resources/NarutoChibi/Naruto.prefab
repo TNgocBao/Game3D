@@ -96,7 +96,7 @@ MonoBehaviour:
   strideReach: 0.32
   footLift: 0.13
   poseResponse: 12
-  idleFootSeparation: 0.19
+  idleFootSeparation: 0.14
 --- !u!1001 &23575101242466291
 PrefabInstance:
   m_ObjectHideFlags: 0

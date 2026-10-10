@@ -26,6 +26,7 @@ namespace LumiAdventure
                 Scenery("Stone lantern base",lantern+Vector3.up*.3f,new Vector3(.85f,.6f,.85f),stone);
                 Scenery("Village lantern pole",lantern+Vector3.up*1.65f,new Vector3(.2f,2.2f,.2f),timber);
                 Scenery("Paper lantern",lantern+Vector3.up*2.65f,new Vector3(.7f,.9f,.7f),LumiFactory.Material("Paper lantern",new Color(1,.73f,.38f),true));
+                if (row % 2 == 0) RoadLight(lantern + Vector3.up * 2.7f, level == 5 ? new Color(.45f,.8f,1f) : new Color(1f,.66f,.28f));
             }
             for(int side=-1;side<=1;side+=2)for(float z=-config.Depth*.5f+5;z<config.Depth*.5f;z+=7)
             {
@@ -65,8 +66,8 @@ namespace LumiAdventure
                 for(int i=0;i<8;i++)
                 {
                     Vector3 p=P((i%2==0?-1:1)*37,-58+i*18);
-                    LumiFactory.Primitive("Cloud mountain pillar",PrimitiveType.Cylinder,worldRoot,p+Vector3.up*7,new Vector3(12,7,12),stone,true);
-                    VillageHouse(p+Vector3.up*14,level,9,7);
+                    // Cloud village keeps houses grounded so no unexplained blue columns appear.
+                    VillageHouse(p,level,9,7);
                 }
                 Material cloud=LumiFactory.Material("Distant cloud banks",new Color(.92f,.97f,1,.65f),false,true);
                 for(int i=0;i<18;i++)LumiFactory.Primitive("Mountain cloud",PrimitiveType.Sphere,worldRoot,P((i%2==0?-1:1)*58,-75+i*9)+Vector3.up*8,new Vector3(20,3,9),cloud,false);
@@ -87,6 +88,15 @@ namespace LumiAdventure
         private void VillageHouse(Vector3 p,int level,float width,float height)
         {
             LumiEnvironmentAssets.House(worldRoot,p,level,width,height);
+        }
+        private void RoadLight(Vector3 position, Color color)
+        {
+            GameObject lightObject = new GameObject("Road lantern light");
+            lightObject.transform.SetParent(worldRoot, false);
+            lightObject.transform.position = position;
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Point; light.color = color; light.intensity = .72f;
+            light.range = 8f; light.shadows = LightShadows.None;
         }
         private void VillageGate(Vector3 p,Material roof,Material wood)
         {

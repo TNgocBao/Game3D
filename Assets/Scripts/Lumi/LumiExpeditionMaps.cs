@@ -109,28 +109,76 @@ namespace LumiAdventure
                     for(int i=0;i<5;i++)CreatePillar(P(28,-45+i*22),sandstone,sandstone,3.2f);
                     break;
                 case 3:
-                    Material ice=LumiFactory.Material("Frozen lake",new Color(.24f,.51f,.69f));
-                    Scenery("Great frozen lake",P(3,0)+Vector3.up*.035f,new Vector3(63,.03f,72),ice);
-                    Trail(config.Route,route,8);
-                    Vector3[] islands={P(6,-22),P(20,4),P(-4,3),P(-26,29)};
-                    foreach(Vector3 island in islands)
+                    // Stone village: layered terraces, rock clusters and narrow stone crossings.
+                    Material stoneTerrace=LumiFactory.Material("Stone village terraces",new Color(.32f,.34f,.31f));
+                    Material stoneLight=LumiFactory.Material("Stone village highlights",new Color(.55f,.5f,.4f));
+                    for(int terrace=0;terrace<5;terrace++)
                     {
-                        LumiFactory.Primitive("Snow island",PrimitiveType.Sphere,worldRoot,island+Vector3.up*.09f,new Vector3(15,.18f,12),snow,false);
-                        ImportedTree(island,5);
-                        ArenaRock(island+P(3,-2),snow,3);
+                        float z=-54+terrace*27;
+                        float y=terrace%2==0?terrace*.7f:(terrace-.5f)*.7f;
+                        CreateBlock("Stone terrace",P(0,z)+Vector3.up*y,new Vector3(config.Width-10,.6f,17),stoneTerrace);
+                        for(int i=0;i<8;i++)
+                        {
+                            float x=-39+i*11+(terrace%2)*4;
+                            ArenaRock(P(x,z+Random.Range(-6f,6f))+Vector3.up*y,stoneLight,Random.Range(3.5f,7f));
+                        }
                     }
-                    Material crystal=LumiFactory.Material("Ice spires",new Color(.45f,.8f,.95f));
                     for(int i=0;i<34;i++)
                     {
-                        Vector3 p=P(Random.Range(-40f,40f),Random.Range(-45f,45f));
+                        Vector3 p=P(Random.Range(-44f,44f),Random.Range(-63f,63f));
                         if(RouteDistance(p,config.Route)<7)continue;
-                        ArenaRock(p,snow,Random.Range(2,4));CreateCrystal(p+P(1,2),crystal,Random.Range(2,5));
+                        ArenaRock(p,stoneLight,Random.Range(2.4f,6.5f));
                     }
-                    Material crack=LumiFactory.Material("Ice fissure",new Color(.1f,.32f,.48f));
-                    for(int i=0;i<20;i++)Scenery("Ice crack",P(Random.Range(-25,25),Random.Range(-30,30))+Vector3.up*.07f,new Vector3(.13f,.02f,Random.Range(2,5)),crack,Quaternion.Euler(0,Random.Range(0,180),0));
+                    for(int i=0;i<4;i++)
+                    {
+                        float z=-42+i*28;
+                        CreateBlock("Stone bridge",P(0,z)+Vector3.up*(1.2f+i%2*.7f),new Vector3(18,.55f,5),stoneLight);
+                    }
                     break;
-                case 4:BuildDungeonRooms(config);break;
-                case 5:BuildFacilityDistricts(config);break;
+                case 4:
+                    // Cloud village: separated floating platforms linked by bridges and cloud banks.
+                    Material cloudRock=LumiFactory.Material("Cloud island rock",new Color(.73f,.75f,.72f));
+                    Material cloudTop=LumiFactory.Material("Cloud island top",new Color(.94f,.97f,1f));
+                    Material cloudMist=LumiFactory.Material("Cloud banks",new Color(.88f,.95f,1f,.62f),false,true);
+                    Vector3[] cloudIslands={P(0,-55),P(-23,-28),P(20,-4),P(-18,22),P(18,49),P(0,70)};
+                    for(int i=0;i<cloudIslands.Length;i++)
+                    {
+                        Vector3 island=cloudIslands[i];float y=2.5f+(i%3)*1.4f;
+                        LumiFactory.Primitive("Floating cloud island",PrimitiveType.Sphere,worldRoot,island+Vector3.up*y,new Vector3(25,3.4f,18),cloudRock,true);
+                        LumiFactory.Primitive("Cloud island surface",PrimitiveType.Sphere,worldRoot,island+Vector3.up*(y+1.25f),new Vector3(22,1.2f,15),cloudTop,false);
+                        for(int c=0;c<5;c++)LumiFactory.Primitive("Cloud bank",PrimitiveType.Sphere,worldRoot,island+new Vector3(-10+c*5,-.5f,Random.Range(-6f,6f))+Vector3.up*(y-1),new Vector3(7,2.4f,5),cloudMist,false);
+                    }
+                    for(int i=1;i<cloudIslands.Length;i++)
+                    {
+                        Vector3 a=cloudIslands[i-1]+Vector3.up*(3.5f+(i%3)*1.4f),b=cloudIslands[i]+Vector3.up*(3.5f+(i%3)*1.4f);
+                        Scenery("Cloud bridge",(a+b)*.5f,new Vector3(6,.45f,Vector3.Distance(a,b)),cloudTop,Quaternion.LookRotation(b-a));
+                    }
+                    for(int i=0;i<14;i++)ImportedTree(P(Random.Range(-40f,40f),Random.Range(-50f,65f))+Vector3.up*3,Random.Range(3f,5f));
+                    break;
+                case 5:
+                    // Mist village: canals, docks and local fog pockets that shorten visibility.
+                    Material canal=LumiFactory.Material("Mist village water",new Color(.12f,.4f,.48f,.9f),false,true);
+                    Material dock=LumiFactory.Material("Mist village dock",new Color(.22f,.17f,.14f));
+                    Material mist=LumiFactory.Material("Mist volume",new Color(.75f,.9f,1f,.35f),false,true);
+                    for(int side=-1;side<=1;side+=2)
+                    {
+                        float x=side*28;
+                        Scenery("Mist canal",P(x,0)+Vector3.up*.05f,new Vector3(13,.08f,config.Depth-18),canal);
+                        for(int i=0;i<7;i++)CreateBlock("Mist dock",P(x+side*8,-55+i*18)+Vector3.up*.16f,new Vector3(9,.3f,5),dock);
+                    }
+                    for(int i=0;i<5;i++)
+                    {
+                        Vector3 p=P(-37+i*18,-42+i*21);
+                        CreateBlock("Mist village crossing",p+Vector3.up*.18f,new Vector3(17,.35f,5),dock);
+                    }
+                    for(int i=0;i<6;i++)
+                    {
+                        Vector3 p=P((i%2==0?-22:22),-45+i*20);
+                        Scenery("Mist pocket",p+Vector3.up*2,new Vector3(22,4,18),mist);
+                        CreateMistZone(p,new Vector3(22,7,18));
+                    }
+                    for(int i=0;i<22;i++)ImportedTree(P(Random.Range(-44f,44f),Random.Range(-60f,60f)),Random.Range(3.5f,6f));
+                    break;
             }
             if(level<=3)
             {

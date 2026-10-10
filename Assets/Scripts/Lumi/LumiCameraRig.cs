@@ -18,7 +18,9 @@ namespace LumiAdventure
         [SerializeField] private LumiCameraMode mode=LumiCameraMode.FirstPerson;
         private LumiPlayerViewVisibility visibility;
         public bool FirstPerson=>mode==LumiCameraMode.FirstPerson;
-        public bool MovementFacing=>mode==LumiCameraMode.MovementFollow;
+        // MovementFollow is kept as a serialized compatibility value for older saves,
+        // but is no longer an exposed camera mode. Free third-person is always free-look.
+        public bool MovementFacing=>false;
         public LumiCameraMode Mode=>mode;
         [SerializeField,Range(.1f,8f)] private float mouseSensitivity=2.5f;
         public bool MouseLookActive=>game!=null&&game.Controls.UsesPcControls&&game.IsPlaying&&Application.isFocused&&Cursor.lockState==CursorLockMode.Locked;
@@ -52,12 +54,12 @@ namespace LumiAdventure
             gameObject.tag="MainCamera";
             gameObject.AddComponent<AudioListener>();
             visibility=target.GetComponent<LumiPlayerViewVisibility>();if(visibility==null)visibility=target.gameObject.AddComponent<LumiPlayerViewVisibility>();
-            mode=(LumiCameraMode)Mathf.Clamp(PlayerPrefs.GetInt("Lumi.CameraMode",0),0,2);
+            mode=(LumiCameraMode)Mathf.Clamp(PlayerPrefs.GetInt("Lumi.CameraMode",0),0,1);
+            if (mode==LumiCameraMode.MovementFollow) mode=LumiCameraMode.FreeThirdPerson;
             visibility.Initialize();visibility.SetFirstPerson(FirstPerson);
-            LumiMobileInput.PointerAimEnabled=MovementFacing;
+            LumiMobileInput.PointerAimEnabled=game.Controls.UsesMobileControls;
             focus=FocusPoint();
             transform.rotation=Quaternion.Euler(pitch,yaw,0f);
-            if(MovementFacing){yaw=target.eulerAngles.y;pitch=12f;}
             transform.position=FirstPerson?EyePoint():focus-transform.forward*distance;
 
         }
@@ -97,11 +99,6 @@ namespace LumiAdventure
             if (target == null || game == null) return;
             if(FirstPerson){transform.SetPositionAndRotation(EyePoint(),Quaternion.Euler(pitch,yaw,0));return;}
             focus=Vector3.Lerp(focus,FocusPoint(),1-Mathf.Exp(-7*Time.unscaledDeltaTime));
-            if(MovementFacing)
-            {
-                yaw=Mathf.LerpAngle(yaw,target.eulerAngles.y,1-Mathf.Exp(-12*Time.unscaledDeltaTime));
-                pitch=Mathf.Lerp(pitch,12f,1-Mathf.Exp(-8*Time.unscaledDeltaTime));
-            }
             Quaternion rotation=Quaternion.Euler(pitch,yaw,0f);
             Vector3 behind=-(rotation*Vector3.forward);
             float visibleDistance=distance;
@@ -126,20 +123,21 @@ namespace LumiAdventure
         }
         public void CycleMode()
         {
-            SetMode((LumiCameraMode)(((int)mode+1)%3),true);
+            SetMode(mode==LumiCameraMode.FirstPerson?LumiCameraMode.FreeThirdPerson:LumiCameraMode.FirstPerson,true);
         }
         public void SetMode(LumiCameraMode value,bool notify=true)
         {
-            mode=value;bool first=FirstPerson;
-            if(MovementFacing){yaw=target!=null?target.eulerAngles.y:yaw;pitch=12f;distance=5.8f;game?.SetMouseLook(false);}
-            else if(game!=null&&game.IsPlaying)game.SetMouseLook(game.Controls.UsesPcControls);
-            LumiMobileInput.PointerAimEnabled=MovementFacing;
-            if(!MovementFacing)LumiMobileInput.HasAim=false;
+            if(value==LumiCameraMode.MovementFollow)value=LumiCameraMode.FreeThirdPerson;
+            bool first=value==LumiCameraMode.FirstPerson;
+            mode=value;
+            if(game!=null&&game.IsPlaying)game.SetMouseLook(game.Controls.UsesPcControls);
+            LumiMobileInput.PointerAimEnabled=game!=null&&game.Controls.UsesMobileControls;
+            if(!LumiMobileInput.PointerAimEnabled)LumiMobileInput.HasAim=false;
             if(visibility!=null)visibility.SetFirstPerson(first);
             if(viewCamera!=null){viewCamera.nearClipPlane=first?.05f:.15f;viewCamera.fieldOfView=first?75:60;}
             if(target!=null){focus=FocusPoint();transform.position=first?EyePoint():focus-Quaternion.Euler(pitch,yaw,0)*Vector3.forward*distance;}
             PlayerPrefs.SetInt("Lumi.CameraMode",(int)mode);PlayerPrefs.Save();
-            if(notify&&game!=null)game.ShowToast(mode==LumiCameraMode.FirstPerson?"GÓC NHÌN: THỨ NHẤT":mode==LumiCameraMode.FreeThirdPerson?"GÓC NHÌN: THỨ BA TỰ DO":"GÓC NHÌN: THEO HƯỚNG DI CHUYỂN",new Color(.25f,.85f,1));
+            if(notify&&game!=null)game.ShowToast(mode==LumiCameraMode.FirstPerson?"GÓC NHÌN: THỨ NHẤT":"GÓC NHÌN: THỨ BA TỰ DO",new Color(.25f,.85f,1));
         }
         private Transform eyeSocket;
         public Vector3 EyePoint(){if(eyeSocket==null && target!=null){foreach(var child in target.GetComponentsInChildren<Transform>())if(child.name=="Eye camera socket"){eyeSocket=child;break;}}return (eyeSocket!=null?eyeSocket.position:target.position+Vector3.up*1.585f)+FlatForward*.06f;}

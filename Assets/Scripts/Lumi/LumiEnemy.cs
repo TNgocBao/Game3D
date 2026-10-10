@@ -82,6 +82,7 @@ namespace LumiAdventure
                     break;
             }
             float levelScale=1+.15f*(Mathf.Clamp(game.CurrentLevel,1,5)-1);health=Mathf.RoundToInt(health*levelScale);damage=Mathf.Max(1,Mathf.RoundToInt(damage*levelScale));
+            detectRange=LumiAimTargetController.LockRange;
             maxHealth=health;tactics=gameObject.AddComponent<LumiCombatTactics>();tactics.Initialize(game,controller);
             strafeSign = Random.value > 0.5f ? 1f : -1f;
             BuildVisual();
@@ -206,7 +207,19 @@ namespace LumiAdventure
             Vector3 delta=target-origin;int count=Physics.RaycastNonAlloc(origin,delta.normalized,obstacleHits,delta.magnitude,~(1<<31),QueryTriggerInteraction.Ignore);var hits=obstacleHits;if(count==hits.Length){hits=Physics.RaycastAll(origin,delta.normalized,delta.magnitude,~(1<<31),QueryTriggerInteraction.Ignore);count=hits.Length;}float nearest=float.PositiveInfinity;Collider closest=null;for(int i=0;i<count;i++){var hit=hits[i];if(hit.collider.transform.IsChildOf(transform)||hit.distance>=nearest)continue;nearest=hit.distance;closest=hit.collider;}return closest==null||(combatTarget!=null&&closest.transform.IsChildOf(combatTarget.transform));
         }
 
-        private bool Blocked(Vector3 origin,float radius,Vector3 direction,float distance){int count=Physics.SphereCastNonAlloc(origin,radius,direction,obstacleHits,distance,~(1<<31),QueryTriggerInteraction.Ignore);var hits=obstacleHits;if(count==hits.Length){hits=Physics.SphereCastAll(origin,radius,direction,distance,~(1<<31),QueryTriggerInteraction.Ignore);count=hits.Length;}for(int i=0;i<count;i++)if(!hits[i].collider.transform.IsChildOf(transform))return true;return false;}
+        private bool Blocked(Vector3 origin,float radius,Vector3 direction,float distance)
+        {
+            // SphereCast requires a normalized, finite direction. Ranger strafing deliberately scales
+            // this vector, which previously flooded Unity assertions every frame on maps 2-5.
+            float magnitude=direction.magnitude;
+            if(magnitude<.0001f||float.IsNaN(magnitude)||float.IsInfinity(magnitude))return false;
+            direction/=magnitude;
+            int count=Physics.SphereCastNonAlloc(origin,radius,direction,obstacleHits,distance,~(1<<31),QueryTriggerInteraction.Ignore);
+            var hits=obstacleHits;
+            if(count==hits.Length){hits=Physics.SphereCastAll(origin,radius,direction,distance,~(1<<31),QueryTriggerInteraction.Ignore);count=hits.Length;}
+            for(int i=0;i<count;i++)if(!hits[i].collider.transform.IsChildOf(transform))return true;
+            return false;
+        }
 
         private void ApplyGravity()
         {

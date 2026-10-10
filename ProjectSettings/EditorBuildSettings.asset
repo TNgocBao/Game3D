@@ -8,4 +8,19 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/3D.unity
     guid: c7e72002bbf75c74c9c0747bc491e65e
+  - enabled: 1
+    path: Assets/Scenes/Village_Leaf.unity
+    guid: 97833f334d3cd7e48bda095a9537d404
+  - enabled: 1
+    path: Assets/Scenes/Village_Sand.unity
+    guid: 4ac2456508653874e896abae04f27067
+  - enabled: 1
+    path: Assets/Scenes/Village_Stone.unity
+    guid: 443dd7210378c0641aa42c39b19b6100
+  - enabled: 1
+    path: Assets/Scenes/Village_Cloud.unity
+    guid: e43cabde530204f4fa7f0708b07a113f
+  - enabled: 1
+    path: Assets/Scenes/Village_Mist.unity
+    guid: e55729a983a9cda4dbabea110b282e1f
   m_configObjects: {}

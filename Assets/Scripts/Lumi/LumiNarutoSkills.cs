@@ -38,9 +38,9 @@ namespace LumiAdventure
             if(game==null || player==null)return;
             if(!player.IsAlive){CancelCharge();return;}
             if(!game.IsPlaying)return;
-            if(Input.GetKeyDown(KeyCode.Q))BeginCharge(1);
+            if(Input.GetKeyDown(KeyCode.C))BeginCharge(1);
             if(Input.GetKeyDown(KeyCode.R))BeginCharge(2);
-            if(Input.GetKeyUp(KeyCode.Q))ReleaseCharge(1);
+            if(Input.GetKeyUp(KeyCode.C))ReleaseCharge(1);
             if(Input.GetKeyUp(KeyCode.R))ReleaseCharge(2);
             if(Input.GetKeyDown(KeyCode.F))Cast(3);
             if(charging>=0 && motion.ChargePoseReady && !releasePending)chargeTime=Mathf.Min(fullChargeSeconds,chargeTime+Time.deltaTime);

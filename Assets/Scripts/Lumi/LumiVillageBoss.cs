@@ -45,18 +45,18 @@ namespace LumiAdventure
         {
             if(!IsAlive || game==null || !game.IsPlaying || !game.Player.IsAlive)return;
             if(tactics==null){tactics=GetComponent<LumiCombatTactics>()??gameObject.AddComponent<LumiCombatTactics>();tactics.Initialize(game,controller);}
-            LumiPlayer player=game.Player;combatTarget=LumiCombatTactics.IsContested(player,transform.position)?player:LumiCombatTactics.SelectTarget(player,transform.position,25,true);
+            LumiPlayer player=game.Player;combatTarget=LumiCombatTactics.IsContested(player,transform.position)?player:LumiCombatTactics.SelectTarget(player,transform.position,LumiAimTargetController.LockRange,true);
             Vector3 delta=(combatTarget!=null?combatTarget.transform.position:player.transform.position)-transform.position;delta.y=0;
-            if(!engaged && delta.magnitude<22){engaged=true;game.ShowToast(BossName+" — "+Element,new Color(1,.7f,.25f));nextSkill=Time.time+1.5f;}
+            if(!engaged && delta.magnitude<LumiAimTargetController.LockRange){engaged=true;game.ShowToast(BossName+" — "+Element,new Color(1,.7f,.25f));nextSkill=Time.time+1.5f;}
             if(!engaged)return;
             if(tactics.Tick(HealthFraction,MoveSpeed,amount=>Heal(maxHealth*amount))){if(casting){StopAllCoroutines();casting=false;motion?.CancelTechnique();ClearCast();}ApplyGravity();return;}
             if(!casting && combatTarget!=null)
             {
                 if(delta.sqrMagnitude>.1f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(delta),360*Time.deltaTime);
-                if(Vector3.Distance(player.transform.position,home)<25 && delta.magnitude>3 && combatTarget!=null)controller.Move(delta.normalized*(MoveSpeed)*Time.deltaTime);
+                if(Vector3.Distance(player.transform.position,home)<LumiAimTargetController.LockRange && delta.magnitude>3 && combatTarget!=null)controller.Move(delta.normalized*(MoveSpeed)*Time.deltaTime);
                 if(delta.magnitude<2.1f && Time.time>nextMelee && combatTarget!=null)
                 {nextMelee=Time.time+1.8f;motion?.PlayTechnique(LumiTechnique.BasicAttack,.45f);((ILumiDamageable)combatTarget).TakeDamage(ScaleDamage(2),combatTarget.transform.position+Vector3.up);}
-                if(Time.time>=nextSkill && delta.magnitude<25 && combatTarget!=null)
+                if(Time.time>=nextSkill && delta.magnitude<LumiAimTargetController.LockRange && combatTarget!=null)
                 {nextSkill=Time.time+(SecondPhaseUnlocked?4.2f-(village-1)*.2f:5.8f-(village-1)*.25f);StartCoroutine(ExclusiveSkill());}
             }
             ApplyGravity();
